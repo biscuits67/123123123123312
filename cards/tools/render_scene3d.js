@@ -39,7 +39,7 @@ const stillT = +(process.argv[3] || 1.5);
   }
   await browser.close();
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(FPS), '-i', path.join(tmp, 'f%04d.png'),
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '24', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
     path.join(DIR, 'emerald_scene3d.mp4')]);
   fs.rmSync(tmp, { recursive: true });
   console.log('emerald_scene3d.mp4', (fs.statSync(path.join(DIR, 'emerald_scene3d.mp4')).size / 1e6).toFixed(1), 'MB');
