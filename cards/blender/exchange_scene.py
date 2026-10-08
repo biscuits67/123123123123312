@@ -313,8 +313,8 @@ def build():
     dark_metal = mat("dark_metal", (0.02, 0.022, 0.022), metal=1.0, rough=0.35)
     steel = mat("steel", (0.3, 0.33, 0.32), metal=1.0, rough=0.25)
     marble = mat("counter", (0.01, 0.012, 0.012), rough=0.08, coat=1.0)
-    neon = emission("neon_emerald", EM["neon"], 7.0)
-    neon_led = emission("led", EM["neon"], 8.0)
+    neon = emission("sign_face", (1.0, 0.97, 0.92), 7.0)
+    neon_led = emission("led", (1.0, 0.86, 0.7), 5.0)          # warm white strips: the store stays neutral
     white_box = emission("lightbox", (0.92, 1.0, 0.96), 6.0)
     warm = emission("warm", (1.0, 0.72, 0.45), 12.0)
     tiles = image_mat("tiles", os.path.join(TEX, "tiles.png"), rough=0.25)
@@ -348,7 +348,7 @@ def build():
     letter_metal = mat("letter_metal", (0.02, 0.022, 0.022), metal=1.0, rough=0.3)
     solid_text("EMERALD", 0.8, (0, -0.2, 4.12), [letter_metal], extrude=0.05, bevel=0.004, font=BRAND, spacing=1.32)
     solid_text("EMERALD", 0.8, (0, -0.257, 4.12), [neon], extrude=0.0, bevel=0.0, font=BRAND, spacing=1.32)
-    halo = solid_text("EMERALD", 0.8, (0, -0.145, 4.12), [emission("halo", EM["neon"], 3.0)], extrude=0.0, bevel=0.0,
+    halo = solid_text("EMERALD", 0.8, (0, -0.145, 4.12), [emission("halo", (1.0, 0.9, 0.78), 2.0)], extrude=0.0, bevel=0.0,
                       font=BRAND, spacing=1.32)
     halo.scale = (1.03, 1.03, 1.03)
     exch = solid_text("EXCHANGE", 0.24, (0, -0.2, 3.52), [white_box], bevel=0.0, font=BRAND, spacing=1.9)
@@ -484,7 +484,7 @@ def build():
 
     # ---- cars
     g63, gmeshes, gsize = import_model(P("g63", "source", "car.fbx"))
-    paint = mat("g63_paint", (0.006, 0.007, 0.007), metal=0.4, rough=0.38, coat=0.25)
+    paint = mat("g63_paint", (0.004, 0.11, 0.055), metal=0.55, rough=0.4, coat=0.2)       # deep emerald satin
     chrome = mat("chrome", (0.9, 0.9, 0.9), metal=1.0, rough=0.06)
     tire = mat("tire", (0.012, 0.012, 0.012), rough=0.75)
     lamp = emission("headlamp", (0.9, 0.97, 1.0), 5)
@@ -500,10 +500,17 @@ def build():
                 tail if ("tail" in n or "brake" in n or "rear_l" in n) else
                 chrome if ("chrom" in n or "silver" in n or "grill" in n or "wheel" in n or "rim" in n) else
                 paint)
-    place(g63, gsize, 1.95, (-2.75, -3.0, 0), math.radians(70))
+    place(g63, gsize, 1.95, (-3.6, -2.6, 0), math.radians(62))
     light("SPOT", "g63_head", (-1.9, -4.7, 0.9), (0.9, 0.97, 1.0), 500, size=0.15, target=(4, -6.5, 0), spot=50)
     porsche, pmeshes, psize2 = import_model(P("porsche", "porsche.usdz"))
-    em_paint = mat("911_paint", (0.01, 0.3, 0.16), metal=0.6, rough=0.34, coat=0.3)
+    invisible = bpy.data.materials.new("invisible")
+    invisible.use_nodes = True
+    _nt = invisible.node_tree
+    _nt.nodes.clear()
+    _tr = _nt.nodes.new("ShaderNodeBsdfTransparent")
+    _nt.links.new(_tr.outputs[0], _nt.nodes.new("ShaderNodeOutputMaterial").inputs[0])
+    car_glass = mat("car_glass", (0.05, 0.06, 0.06), rough=0.0, transmission=1.0, ior=1.5, coat=1.0)
+    em_paint = mat("911_paint", (0.0, 0.36, 0.16), metal=0.75, rough=0.26, coat=0.7)        # bright emerald metallic
     for o in pmeshes:
         for i, m in enumerate(o.data.materials):
             if m and m.name == "body_main":
@@ -512,7 +519,11 @@ def build():
                 o.data.materials[i] = lamp
             if m and m.name == "red_light_main":
                 o.data.materials[i] = tail
-    place(porsche, psize2, 1.31, (2.9, -3.6, 0), math.radians(-128))
+            if m and m.name == "invisible_all":           # helper geometry of the model: hide it
+                o.data.materials[i] = invisible
+            if m and m.name in ("windows", "windows_dots"):   # imported glass comes in opaque -> real tinted glass
+                o.data.materials[i] = car_glass
+    place(porsche, psize2, 1.31, (3.3, -4.2, 0), math.radians(-136))
     light("SPOT", "911_head", (2.3, -6.2, 0.7), (0.9, 0.97, 1.0), 400, size=0.12, target=(-1, -11, 0), spot=55)
 
     # ---- wind: banknotes blown off the counter and down the street
@@ -537,14 +548,18 @@ def build():
             o.keyframe_insert("rotation_euler", frame=f)
 
     # ---- lights
-    light("AREA", "store_fill", (0, 1.2, 3.1), (1.0, 0.9, 0.8), 600, size=4.0, rot=(0, 0, 0))
-    neon_light = light("AREA", "sign_spill", (0, -0.6, 4.6), EM["neon"], 200, size=7.0, rot=(math.radians(150), 0, 0))
-    light("AREA", "rim_cool", (-6, -6, 6), (0.55, 0.75, 1.0), 900, size=5, target=(0, 0, 1.5))
+    light("AREA", "store_fill", (0, 1.2, 3.1), (1.0, 0.88, 0.76), 420, size=4.0, rot=(0, 0, 0))
+    neon_light = light("AREA", "sign_spill", (0, -0.6, 4.6), (1.0, 0.92, 0.82), 120, size=7.0, rot=(math.radians(150), 0, 0))
+    # car lighting like a night car shoot: a long soft strip above (reads as a line on the paint) + cool rims behind
+    light("AREA", "car_strip", (2.4, -4.4, 4.2), (0.92, 0.96, 1.0), 380, size=4.0, target=(2.7, -4.0, 0.6))
+    light("AREA", "rim_911", (5.6, -1.8, 1.4), (0.75, 0.88, 1.0), 260, size=1.5, target=(2.7, -4.0, 0.7))
+    light("AREA", "rim_g63", (-6.6, -0.8, 2.2), (0.75, 0.88, 1.0), 300, size=1.8, target=(-3.6, -2.6, 1.0))
+    light("AREA", "rim_cool", (-6, -6, 6), (0.55, 0.7, 1.0), 450, size=5, target=(0, 0, 1.5))
     light("AREA", "agent_key", (1.2, -1.5, 2.6), (0.8, 1.0, 0.92), 50, size=1.0, target=(0, 0.85, 1.4))
     world = bpy.data.worlds.new("night")
     sc.world = world
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.003, 0.006, 0.008, 1)
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.004, 0.005, 0.008, 1)
     haze = obj("haze", box_mesh("haze", 40, 30, 10), None, loc=(0, -4, 5))
     hm = bpy.data.materials.new("haze")
     hm.use_nodes = True
@@ -563,21 +578,21 @@ def build():
 
     # ---- camera: low, slow push towards the store
     cam_d = bpy.data.cameras.new("cam")
-    cam_d.lens = 48
+    cam_d.lens = 42
     cam_d.dof.use_dof = True
-    cam_d.dof.aperture_fstop = 2.8
+    cam_d.dof.aperture_fstop = 3.2
     cam = bpy.data.objects.new("cam", cam_d)
     sc.collection.objects.link(cam)
     sc.camera = cam
     focus = bpy.data.objects.new("focus", None)
     sc.collection.objects.link(focus)
-    focus.location = (0, 0.75, 1.45)
+    focus.location = (2.6, -5.4, 0.8)
     cam_d.dof.focus_object = focus
     look = bpy.data.objects.new("look", None)
     sc.collection.objects.link(look)
     tc = cam.constraints.new("TRACK_TO")
     tc.target, tc.track_axis, tc.up_axis = look, "TRACK_NEGATIVE_Z", "UP_Y"
-    for f, cpos, lpos in ((1, (1.6, -9.8, 1.15), (0.0, 0.8, 2.75)), (FRAMES, (1.0, -8.6, 1.2), (0.0, 0.8, 2.7))):
+    for f, cpos, lpos in ((1, (3.4, -10.2, 0.7), (0.6, 0.0, 1.7)), (FRAMES, (2.9, -9.4, 0.74), (0.55, 0.0, 1.68))):
         cam.location, look.location = cpos, lpos
         cam.keyframe_insert("location", frame=f)
         look.keyframe_insert("location", frame=f)

@@ -27,7 +27,7 @@ def bloom(img):
     glow = np.zeros_like(a)
     for radius, weight in ((6, 0.55), (22, 0.45), (60, 0.35)):
         glow += np.asarray(hi.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32) / 255 * weight
-    return a + glow * np.array([0.75, 1.0, 0.85], dtype=np.float32)
+    return a + glow * np.array([1.0, 0.98, 0.95], dtype=np.float32)
 
 
 def grade(a, i):
@@ -42,12 +42,12 @@ def grade(a, i):
         sy = np.clip(yy + dy * shift * k * h * 0.0009, 0, h - 1).astype(np.int32)
         return a[sy, sx, ch]
     a = np.stack([sample(0, 1.0), a[..., 1], sample(2, -1.0)], axis=-1)
-    # contrast curve with deep blacks + emerald tint in the shadows
+    # contrast curve with deep blacks, slightly cool shadows
     a = np.clip(a, 0, None)
     a = a / (1 + a * 0.12)
     a = np.clip((a - 0.025) * 1.12, 0, None) ** 1.08
     shadow = np.clip(1 - a.mean(-1, keepdims=True) * 3, 0, 1)
-    a = a + shadow * np.array([-0.002, 0.004, 0.003], dtype=np.float32)
+    a = a + shadow * np.array([-0.002, 0.0, 0.004], dtype=np.float32)   # cool shadows
     # vignette
     a *= (1 - np.clip((np.sqrt(r2) - 0.32) / 0.5, 0, 1) ** 1.6 * 0.7)[..., None]
     # grain (fresh every frame)
