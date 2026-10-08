@@ -10,8 +10,6 @@ ASSETS = Path(__file__).parent / "assets"
 
 FONTS = {
     "bold": "InterDisplay-Bold.otf",
-    "semibold": "InterDisplay-SemiBold.otf",
-    "medium": "InterDisplay-Medium.otf",
 }
 THEMES = {
     "emerald": {"c1": (111, 242, 189), "c2": (25, 196, 138)},
