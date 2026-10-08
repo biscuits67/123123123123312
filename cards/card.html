@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Emerald card</title>
+<style>
+  :root{
+    --bg0:#020c08; --bg1:#05221a;
+    --c1:#6ff2bd; --c2:#19c48a; --c3:#0b8a5e; --c4:#05523a; --c5:#032c20;
+    --accent:#34d399; --text:#eafff6; --muted:#8fb8a7; --gold:#d8c48a;
+  }
+  body.no{
+    --c1:#ff9aa6; --c2:#f0475d; --c3:#b3203a; --c4:#6e0f22; --c5:#3a0712;
+    --accent:#ff6b7d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:640px;overflow:hidden;background:var(--bg0)}
+  body{font-family:"Inter Display","Inter",sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+  .card{position:relative;width:100%;height:100%;overflow:hidden;
+    background:
+      radial-gradient(900px 600px at 82% 50%, color-mix(in oklab,var(--c3) 38%,transparent), transparent 62%),
+      radial-gradient(700px 500px at 0% 0%, #0a3a2a 0%, transparent 60%),
+      radial-gradient(600px 400px at 10% 110%, #06281d 0%, transparent 70%),
+      linear-gradient(135deg,var(--bg1),var(--bg0) 70%);}
+  /* faceted light rays */
+  .rays{position:absolute;inset:0;opacity:.55;
+    background:
+      conic-gradient(from 200deg at 80% 50%, transparent 0 8deg, rgba(255,255,255,.035) 8deg 12deg, transparent 12deg 30deg, rgba(255,255,255,.03) 30deg 33deg, transparent 33deg 60deg, rgba(255,255,255,.025) 60deg 64deg, transparent 64deg 360deg);
+    mask-image:radial-gradient(700px 500px at 80% 50%,#000,transparent 75%)}
+  .grid{position:absolute;inset:0;opacity:.06;
+    background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);
+    background-size:40px 40px;mask-image:linear-gradient(90deg,#000 0%,transparent 55%)}
+  .frame{position:absolute;inset:18px;border-radius:28px;border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .frame::before{content:"";position:absolute;inset:-1px;border-radius:28px;padding:1px;
+    background:linear-gradient(120deg,rgba(216,196,138,.55),transparent 25%,transparent 70%,color-mix(in oklab,var(--accent) 60%,transparent));
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+
+  .left{position:absolute;left:84px;top:78px;bottom:78px;width:640px;display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:14px;font-weight:700;letter-spacing:.32em;font-size:20px;color:#d7f5e8}
+  .brand small{font-weight:500;letter-spacing:.2em;color:var(--gold);font-size:13px;padding:5px 10px;border:1px solid rgba(216,196,138,.35);border-radius:999px;margin-left:6px}
+  .status{margin-top:auto;display:inline-flex;align-self:flex-start;align-items:center;gap:10px;
+    padding:9px 16px 9px 12px;border-radius:999px;font-size:17px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--c1);background:color-mix(in oklab,var(--c3) 22%,transparent);border:1px solid color-mix(in oklab,var(--c2) 45%,transparent)}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--c1);box-shadow:0 0 0 4px color-mix(in oklab,var(--c2) 30%,transparent),0 0 18px var(--c2)}
+  h1{margin-top:22px;font-size:84px;line-height:.98;font-weight:700;letter-spacing:-.035em}
+  h1 span{background:linear-gradient(100deg,var(--c1),var(--c2) 55%,var(--c1));-webkit-background-clip:text;background-clip:text;color:transparent}
+  p{margin-top:24px;font-size:26px;line-height:1.4;color:var(--muted);max-width:560px}
+  p b{color:var(--text);font-weight:600}
+  .foot{margin-top:auto;display:flex;align-items:center;gap:14px;font-size:16px;color:#5f8a78;letter-spacing:.04em}
+  .foot i{flex:0 0 46px;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+
+  .gemwrap{position:absolute;right:96px;top:50%;transform:translateY(-50%);width:400px;height:460px}
+  .glow{position:absolute;inset:-60px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--c2) 55%,transparent),transparent);filter:blur(30px);opacity:.75}
+  .shadow{position:absolute;left:60px;right:60px;bottom:-34px;height:40px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--c2) 50%,transparent),transparent);filter:blur(8px)}
+  svg{position:absolute;inset:0;overflow:visible}
+  .sparkle{position:absolute;width:26px;height:26px}
+  .sparkle::before,.sparkle::after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:2px;transform:translate(-50%,-50%)}
+  .sparkle::before{width:2px;height:100%;box-shadow:0 0 10px #fff}
+  .sparkle::after{width:100%;height:2px;box-shadow:0 0 10px #fff}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="grid"></div>
+  <div class="rays"></div>
+  <div class="frame"></div>
+
+  <div class="left">
+    <div class="brand">
+      <svg width="28" height="32" viewBox="0 0 28 32" style="position:static">
+        <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7ff5c6"/><stop offset="1" stop-color="#0b8a5e"/></linearGradient></defs>
+        <polygon points="7,1 21,1 27,7 27,25 21,31 7,31 1,25 1,7" fill="url(#bg)"/>
+        <polygon points="10,7 18,7 21,10 21,22 18,25 10,25 7,22 7,10" fill="#05523a" opacity=".55"/>
+      </svg>
+      EMERALD <small>EMRLD</small>
+    </div>
+
+    <div class="status"><span class="dot"></span><span id="status"></span></div>
+    <h1 id="title"></h1>
+    <p id="text"></p>
+
+    <div class="foot"><i></i><span id="foot"></span></div>
+  </div>
+
+  <div class="gemwrap">
+    <div class="glow"></div>
+    <div class="shadow"></div>
+    <!-- emerald (step) cut, front view -->
+    <svg viewBox="0 0 400 460">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--c1)"/><stop offset=".45" stop-color="var(--c2)"/><stop offset="1" stop-color="var(--c4)"/>
+        </linearGradient>
+        <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--c2)"/><stop offset="1" stop-color="var(--c5)"/>
+        </linearGradient>
+        <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--c3)"/><stop offset="1" stop-color="var(--c5)"/>
+        </linearGradient>
+        <linearGradient id="table" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--c2)"/><stop offset=".55" stop-color="var(--c3)"/><stop offset="1" stop-color="var(--c4)"/>
+        </linearGradient>
+        <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+      </defs>
+
+      <!-- outline: octagon -->
+      <!-- outer: (90,10)(310,10)(390,90)(390,370)(310,450)(90,450)(10,370)(10,90) -->
+      <!-- mid:   (110,50)(290,50)(350,110)(350,350)(290,410)(110,410)(50,350)(50,110) -->
+      <!-- table: (135,95)(265,95)(305,135)(305,325)(265,365)(135,365)(95,325)(95,135) -->
+      <!-- outer ring facets -->
+      <polygon points="90,10 310,10 290,50 110,50" fill="var(--c1)"/>
+      <polygon points="310,10 390,90 350,110 290,50" fill="url(#g1)"/>
+      <polygon points="390,90 390,370 350,350 350,110" fill="url(#g2)"/>
+      <polygon points="390,370 310,450 290,410 350,350" fill="var(--c4)"/>
+      <polygon points="310,450 90,450 110,410 290,410" fill="var(--c5)"/>
+      <polygon points="90,450 10,370 50,350 110,410" fill="var(--c4)"/>
+      <polygon points="10,370 10,90 50,110 50,350" fill="url(#g3)"/>
+      <polygon points="10,90 90,10 110,50 50,110" fill="var(--c2)"/>
+      <!-- mid ring facets -->
+      <polygon points="110,50 290,50 265,95 135,95" fill="var(--c2)"/>
+      <polygon points="290,50 350,110 305,135 265,95" fill="var(--c3)"/>
+      <polygon points="350,110 350,350 305,325 305,135" fill="var(--c3)"/>
+      <polygon points="350,350 290,410 265,365 305,325" fill="var(--c5)"/>
+      <polygon points="290,410 110,410 135,365 265,365" fill="var(--c4)"/>
+      <polygon points="110,410 50,350 95,325 135,365" fill="var(--c5)"/>
+      <polygon points="50,350 50,110 95,135 95,325" fill="var(--c4)"/>
+      <polygon points="50,110 110,50 135,95 95,135" fill="var(--c1)" opacity=".85"/>
+      <!-- table -->
+      <polygon points="135,95 265,95 305,135 305,325 265,365 135,365 95,325 95,135" fill="url(#table)"/>
+      <!-- inner step lines on table -->
+      <polygon points="150,120 250,120 280,150 280,310 250,340 150,340 120,310 120,150" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2"/>
+      <!-- edges -->
+      <g fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.5">
+        <polygon points="90,10 310,10 390,90 390,370 310,450 90,450 10,370 10,90"/>
+        <polygon points="110,50 290,50 350,110 350,350 290,410 110,410 50,350 50,110"/>
+        <polygon points="135,95 265,95 305,135 305,325 265,365 135,365 95,325 95,135"/>
+        <path d="M90,10L110,50L135,95 M310,10L290,50L265,95 M390,90L350,110L305,135 M390,370L350,350L305,325 M310,450L290,410L265,365 M90,450L110,410L135,365 M10,370L50,350L95,325 M10,90L50,110L95,135"/>
+      </g>
+      <!-- highlight -->
+      <polygon points="90,10 310,10 290,50 110,50 50,110 10,90" fill="url(#shine)"/>
+      <polygon points="135,95 230,95 120,250 95,250 95,135" fill="#fff" opacity=".10"/>
+
+      <!-- icon -->
+      <g id="icon-ok" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <path d="M162,232 L190,260 L242,204" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,5)" filter="url(#soft)"/>
+        <path d="M162,232 L190,260 L242,204" fill="none" stroke="#f2fff9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <g id="icon-no" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="#1a0207" opacity=".35"/>
+        <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" transform="translate(0,5)" filter="url(#soft)"/>
+        <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#fff5f6" stroke-width="18" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div class="sparkle" style="left:300px;top:-6px"></div>
+    <div class="sparkle" style="left:-8px;top:120px;transform:scale(.6)"></div>
+    <div class="sparkle" style="left:372px;top:330px;transform:scale(.5)"></div>
+  </div>
+</div>
+
+<script>
+  const V = {
+    ok: {
+      status:"Заявка принята",
+      title:'Заявка<br><span>принята</span>',
+      text:"Добро пожаловать в Emerald. <b>Успешной работы!</b> Меню бота уже доступно.",
+      foot:"Нет меню? Отправьте /start"
+    },
+    no: {
+      status:"Заявка отклонена",
+      title:'Заявка<br><span>отклонена</span>',
+      text:"К сожалению, сейчас мы не можем одобрить заявку. <b>Причину уточнит администрация.</b>",
+      foot:"Контакт администрации — в сообщении ниже"
+    }
+  };
+  const k = new URLSearchParams(location.search).get("v")==="no" ? "no" : "ok";
+  document.body.classList.add(k);
+  for (const id of ["status","title","text","foot"]) document.getElementById(id).innerHTML = V[k][id];
+  document.getElementById("icon-"+k).style.display = "";
+</script>
+</body>
+</html>
