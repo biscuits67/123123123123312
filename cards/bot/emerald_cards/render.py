@@ -33,7 +33,7 @@ def _layout() -> dict:
 
 @lru_cache(maxsize=None)
 def _base(name: str) -> Image.Image:
-    return Image.open(ASSETS / "bases" / f"{name}.png").convert("RGB")
+    return Image.open(ASSETS / "bases" / f"{name}.jpg").convert("RGB")
 
 
 @lru_cache(maxsize=64)
@@ -155,6 +155,59 @@ def _draw_list(img: Image.Image, slot: dict, value, scale: float, theme: dict):
     img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
 
 
+MEDALS = [(232, 200, 120), (200, 212, 220), (214, 150, 104)]  # gold, silver, bronze
+
+
+def _draw_top(img: Image.Image, slot: dict, rows, scale: float, theme: dict):
+    """Leaderboard: rows = [(name, amount_text), ...], best first."""
+    sc = scale
+    x, y = slot["x"] * sc, slot["y"] * sc
+    w, h = slot["w"] * sc, slot["h"] * sc
+    row_h, gap, r = 56 * sc, 10 * sc, 14 * sc
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    rank_font = _font("bold", round(17 * sc))
+    if not rows:
+        d.rounded_rectangle([x, y, x + w, y + row_h * 1.6], r, fill=(255, 255, 255, 12),
+                            outline=(255, 255, 255, 30), width=max(1, round(sc)))
+        d.text((x + 28 * sc, y + row_h * 0.8), "Пока нет депозитов", font=_font("bold", round(slot["size"] * sc)),
+               fill=MUTED, anchor="lm")
+        img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+        return
+    max_rows = max(1, int((h + gap) // (row_h + gap)))
+    amounts = []
+    for i, (name, amount) in enumerate(rows[:max_rows]):
+        y0 = y + i * (row_h + gap)
+        cy = y0 + row_h / 2
+        first = i == 0
+        d.rounded_rectangle([x, y0, x + w, y0 + row_h], r,
+                            fill=(*theme["c2"], 34) if first else (255, 255, 255, 12),
+                            outline=(*MEDALS[0], 110) if first else (255, 255, 255, 26), width=max(1, round(sc)))
+        cx = x + 34 * sc
+        if i < 3:
+            d.ellipse([cx - 15 * sc, cy - 15 * sc, cx + 15 * sc, cy + 15 * sc], fill=(*MEDALS[i], 255))
+            d.text((cx, cy), str(i + 1), font=rank_font, fill=(20, 24, 22, 255), anchor="mm")
+        else:
+            d.ellipse([cx - 15 * sc, cy - 15 * sc, cx + 15 * sc, cy + 15 * sc],
+                      outline=(*MUTED, 150), width=max(1, round(2 * sc)))
+            d.text((cx, cy), str(i + 1), font=rank_font, fill=(*MUTED, 255), anchor="mm")
+        amount_text, amount_font = _fit(clean(amount), "bold", slot["size"] * sc, w * 0.42)
+        aw = amount_font.getlength(amount_text)
+        amounts.append((x + w - 22 * sc - aw, y0, aw, amount_text, amount_font))
+        name_x = x + 66 * sc
+        t, f = _fit(clean(name), "bold", (slot["size"] - 2) * sc, x + w - 44 * sc - aw - name_x)
+        d.text((name_x, cy), t, font=f, fill=(*WHITE, 255), anchor="lm")
+    img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+    for ax, y0, aw, text, font in amounts:   # gradient amounts on top
+        _draw_slot_text(img, round(ax), round(y0), round(aw) + 2, round(row_h), text, font, theme)
+
+
+def _draw_slot_text(img, x, y, w, h, text, font, theme):
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).text((0, h / 2), text, font=font, fill=255, anchor="lm")
+    img.paste(_gradient(w, h, theme["c1"], theme["c2"]), (x, y), mask)
+
+
 def render(card: str, fmt: str = "JPEG", **values) -> bytes:
     """Draw values onto a dynamic card and return image bytes.
 
@@ -167,7 +220,9 @@ def render(card: str, fmt: str = "JPEG", **values) -> bytes:
     for name, slot in spec["slots"].items():
         if name not in values:
             raise TypeError(f"card {card!r} needs value {name!r}")
-        if slot.get("kind") == "list":
+        if slot.get("kind") == "top":
+            _draw_top(img, slot, values[name], spec["scale"], theme)
+        elif slot.get("kind") == "list":
             _draw_list(img, slot, values[name], spec["scale"], theme)
         else:
             _draw_slot(img, slot, clean(values[name]), spec["scale"], theme)

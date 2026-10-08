@@ -95,3 +95,22 @@ async def domain_added(msg, domain):
 
 # Note: a text message ("Загрузка...") can't be edited into a photo.
 # Delete it and send the photo instead:  await msg2edit.delete(); await msg.answer_photo(...)
+
+
+# --- top deposits ---
+async def top_deposits_menu(msg, top_deposits_btns):
+    await msg.delete()
+    await msg.answer_photo(FSInputFile(cards.static("top_deposits")),
+                           caption="🥇 Выберите период для топа депозитов:", reply_markup=top_deposits_btns)
+
+
+async def top_deposits(call, rows):
+    # call.data = "top_deposits_day" | "_week" | "_month" | "_all"
+    # rows = [(name, amount), ...] from your DB, best first (5 are drawn, caption can hold all)
+    await call.message.answer_photo(photo(cards.top_deposits(call.data, rows)))
+
+
+# --- access checks ---
+async def banned(msg):
+    await msg.answer_photo(FSInputFile(cards.static("banned")),
+                           caption="⛔️ Вы были заблокированы администрацией")

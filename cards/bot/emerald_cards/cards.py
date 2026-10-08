@@ -21,13 +21,20 @@ STATIC = (
     "domains_not_found",     # ❌ Активные домены не найдены
     "menu_materials",        # 📕 Материалы
     "menu_info",             # ℹ️ Информация
+    "top_deposits",          # 🥇 Выберите период для топа депозитов
+    "add_domain",            # 💬 Введите домен (example.com)
+    "cancelled",             # Операция отменена.
+    "confirmed",             # Операция подтверждена.
+    "unknown_command",       # Неизвестная команда
+    "banned",                # ⛔️ Вы были заблокированы администрацией
+    "profile_error",         # ⛔️ Ошибка профиля. Обратитесь к администратору.
 )
 
 
 def static(name: str) -> Path:
     if name not in STATIC:
         raise ValueError(f"unknown static card {name!r}, choose from {STATIC}")
-    return ASSETS / "static" / f"{name}.png"
+    return ASSETS / "static" / f"{name}.jpg"
 
 
 def money(value) -> str:
@@ -93,3 +100,17 @@ def domains_list(domains, active_domain=None, all_active=False) -> bytes:
     Admin list: domains_list(domains, active_domain) — the active one is highlighted.
     User menu:  domains_list(active_domains, all_active=True) — every domain gets a check."""
     return render("domains_list", domains=(list(domains or []), active_domain, all_active))
+
+
+TOP_PERIODS = {"day": "top_day", "week": "top_week", "month": "top_month", "all": "top_all"}
+
+
+def top_deposits(period, rows) -> bytes:
+    """📅 Топ депозитов за день / неделю / месяц / всё время.
+    period -- "day" | "week" | "month" | "all" (or callback_data like "top_deposits_week")
+    rows   -- [(name, amount), ...] best first; up to 5 are shown, amounts as numbers or text."""
+    period = str(period).rsplit("_", 1)[-1]
+    if period not in TOP_PERIODS:
+        raise ValueError(f"period must be one of {list(TOP_PERIODS)}")
+    prepared = [(name, money(amount) if isinstance(amount, (int, float)) else amount) for name, amount in rows]
+    return render(TOP_PERIODS[period], rows=prepared)

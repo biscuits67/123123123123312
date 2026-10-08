@@ -16,9 +16,11 @@ const NAMES = {
   number: 'enter_number', promo: 'promo_name', promo_exists: 'promo_exists', domain_bad: 'domain_bad_format',
   domain_added: 'domain_added', domain_exists: 'domain_exists', domains: 'domains_list',
   materials: 'menu_materials', info: 'menu_info', domains_none: 'domains_not_found',
+  top_menu: 'top_deposits', top_day: 'top_day', top_week: 'top_week', top_month: 'top_month', top_all: 'top_all',
+  add_domain: 'add_domain', cancelled: 'cancelled', confirmed: 'confirmed', unknown: 'unknown_command', banned: 'banned', profile_error: 'profile_error',
 };
 const THEME = { no: 'ruby', no_wallet: 'ruby', payout_no: 'ruby', failed: 'ruby', number: 'ruby',
-  promo_exists: 'ruby', domain_bad: 'ruby', domain_exists: 'ruby', domains_none: 'ruby' };
+  promo_exists: 'ruby', domain_bad: 'ruby', domain_exists: 'ruby', domains_none: 'ruby', unknown: 'ruby', banned: 'ruby', profile_error: 'ruby' };
 const ASSETS = path.join(DIR, 'bot', 'emerald_cards', 'assets');
 
 (async () => {
@@ -47,5 +49,6 @@ const ASSETS = path.join(DIR, 'bot', 'emerald_cards', 'assets');
     console.log('rendered', name, slots.length ? '(dynamic)' : '');
   }
   fs.writeFileSync(layoutFile, JSON.stringify(layout, null, 2));
+  // next: python3 tools/pack.py  (PNG -> JPEG for the bot, builds the zip)
   await browser.close();
 })();

@@ -154,5 +154,65 @@
         "kind": "list"
       }
     }
+  },
+  "top_day": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "rows": {
+        "x": 84,
+        "y": 240.71875,
+        "w": 700,
+        "h": 330,
+        "size": 24,
+        "weight": "bold",
+        "kind": "top"
+      }
+    }
+  },
+  "top_week": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "rows": {
+        "x": 84,
+        "y": 240.71875,
+        "w": 700,
+        "h": 330,
+        "size": 24,
+        "weight": "bold",
+        "kind": "top"
+      }
+    }
+  },
+  "top_month": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "rows": {
+        "x": 84,
+        "y": 240.71875,
+        "w": 700,
+        "h": 330,
+        "size": 24,
+        "weight": "bold",
+        "kind": "top"
+      }
+    }
+  },
+  "top_all": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "rows": {
+        "x": 84,
+        "y": 240.71875,
+        "w": 700,
+        "h": 330,
+        "size": 24,
+        "weight": "bold",
+        "kind": "top"
+      }
+    }
   }
 }

@@ -263,6 +263,26 @@
         <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><circle cx="200" cy="202" r="9" fill="currentColor"/><path d="M200,226 V264" stroke="currentColor" stroke-width="16" stroke-linecap="round"/></g>
         <g style="color:#f2fff9"><circle cx="200" cy="202" r="9" fill="currentColor"/><path d="M200,226 V264" stroke="currentColor" stroke-width="16" stroke-linecap="round"/></g>
       </g>
+      <g id="icon-medal" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M176,184 L192,216 M224,184 L208,216" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><circle cx="200" cy="244" r="32" fill="currentColor"/><text x="200" y="259" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="40" fill="var(--c3)">1</text></g>
+        <g style="color:#f2fff9"><path d="M176,184 L192,216 M224,184 L208,216" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><circle cx="200" cy="244" r="32" fill="currentColor"/><text x="200" y="259" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="40" fill="var(--c3)">1</text></g>
+      </g>
+      <g id="icon-question" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M178,208 Q178,184 200,184 Q224,184 224,206 Q224,222 206,230 Q200,234 200,246" fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="200" cy="270" r="9" fill="currentColor"/></g>
+        <g style="color:#f2fff9"><path d="M178,208 Q178,184 200,184 Q224,184 224,206 Q224,222 206,230 Q200,234 200,246" fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><circle cx="200" cy="270" r="9" fill="currentColor"/></g>
+      </g>
+      <g id="icon-ban" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><circle cx="200" cy="230" r="40" fill="none" stroke="currentColor" stroke-width="13"/><path d="M172,202 L228,258" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></g>
+        <g style="color:#f2fff9"><circle cx="200" cy="230" r="40" fill="none" stroke="currentColor" stroke-width="13"/><path d="M172,202 L228,258" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></g>
+      </g>
+      <g id="icon-alert" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M200,186 V240" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><circle cx="200" cy="268" r="10" fill="currentColor"/></g>
+        <g style="color:#f2fff9"><path d="M200,186 V240" stroke="currentColor" stroke-width="16" stroke-linecap="round"/><circle cx="200" cy="268" r="10" fill="currentColor"/></g>
+      </g>
     </svg>
     <div class="sparkle" style="left:300px;top:-6px"></div>
     <div class="sparkle" style="left:-8px;top:120px;transform:scale(.6)"></div>
@@ -346,6 +366,17 @@
     materials: { icon:'book', status:'Материалы', title:"Материалы<br><span>и промокоды</span>", text:'Создавайте промокоды, <b>смотрите статистику</b>, редактируйте и удаляйте их.', foot:'Выберите действие ниже' },
     info: { icon:'info', status:'Информация', title:"Полезные<br><span>ссылки</span>", text:'Чат, новости, депозит, <b>мануал и саппорт</b>&nbsp;— всё в кнопках ниже.', foot:'Ссылки открываются в Telegram и браузере' },
     domains_none: { theme:'no', icon:'globe', status:'Домены', title:"Домены<br><span>не найдены</span>", text:'Сейчас <b>нет активных доменов</b>. Загляните позже.', foot:'' },
+    top_menu: { icon:'medal', status:'Топ депозитов', title:"Топ<br><span>депозитов</span>", text:'Выберите период: <b>день, неделя, месяц</b> или всё время.', foot:'Выберите период ниже' },
+    top_day: { icon:'medal', cls:'list', status:'Топ', title:"Топ <span>за день</span>", text:'', extra:'<div data-slot="rows" data-kind="top" data-size="24" data-weight="bold" style="width:700px;height:330px;margin-top:28px"></div>', foot:'' },
+    top_week: { icon:'medal', cls:'list', status:'Топ', title:"Топ <span>за неделю</span>", text:'', extra:'<div data-slot="rows" data-kind="top" data-size="24" data-weight="bold" style="width:700px;height:330px;margin-top:28px"></div>', foot:'' },
+    top_month: { icon:'medal', cls:'list', status:'Топ', title:"Топ <span>за месяц</span>", text:'', extra:'<div data-slot="rows" data-kind="top" data-size="24" data-weight="bold" style="width:700px;height:330px;margin-top:28px"></div>', foot:'' },
+    top_all: { icon:'medal', cls:'list', status:'Топ', title:"Топ <span>за всё время</span>", text:'', extra:'<div data-slot="rows" data-kind="top" data-size="24" data-weight="bold" style="width:700px;height:330px;margin-top:28px"></div>', foot:'' },
+    add_domain: { icon:'globe', cls:'has-plate', status:'Новый домен', title:"Добавить<br><span>домен</span>", text:'Введите домен <b>ответным сообщением</b>.', extra:'<div class="plate"><span class="pl-label">Формат</span><span class="pl-sep"></span><span class="slot grad" style="font-size:40px;height:48px;line-height:48px">example.com</span></div>', foot:'' },
+    cancelled: { icon:'no', status:'Отменено', title:"Операция<br><span>отменена</span>", text:'Действие отменено, <b>ничего не изменилось</b>.', foot:'Вернуться в меню — /start' },
+    confirmed: { icon:'ok', status:'Подтверждено', title:"Операция<br><span>подтверждена</span>", text:'Действие <b>успешно подтверждено</b>.', foot:'' },
+    unknown: { theme:'no', icon:'question', status:'Неизвестная команда', title:"Команда<br><span>не найдена</span>", text:'Пожалуйста, <b>выберите действие</b> из меню.', foot:'Нет меню? Отправьте /start' },
+    banned: { theme:'no', icon:'ban', status:'Доступ закрыт', title:"Вы<br><span>заблокированы</span>", text:'Ваш аккаунт <b>заблокирован администрацией</b>.', foot:'' },
+    profile_error: { theme:'no', icon:'alert', status:'Ошибка', title:"Ошибка<br><span>профиля</span>", text:'Не удалось загрузить профиль. <b>Обратитесь к&nbsp;администратору.</b>', foot:'' },
   };
   const q = new URLSearchParams(location.search);
   const k = V[q.get("v")] ? q.get("v") : "ok";
