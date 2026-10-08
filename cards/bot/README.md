@@ -117,3 +117,29 @@ The channels get their own versions with a gold label under the name: `../avatar
 `../avatar_deposits.png` (ДЕПОЗИТЫ) and `../avatar_news.png` (NEWS). Source: `../avatar.html`
 (`?sub=TEXT` adds the label). Re-render all of them with `node ../tools/render_avatar.js`, and add
 new labels in its `AVATARS` list.
+
+# Sticker pack: Эмик
+
+`emerald_stickers/` holds 20 branded stickers with the mascot **Эмик**, a living emerald cut like the
+stone on the cards. Like classic sticker packs, each one has a white die-cut outline and a bold caption.
+
+| | | | |
+|---|---|---|---|
+| ВАУ! 😮 | ДЕНЬГИ! 🤑 | СУПЕР! 👍 | ПОЙДУ НА ЗАВОД 😭 |
+| ЗАНОС! 🎉 | ЛЕТИМ! 🚀 | ДЕПНУЛ! 💸 | ЖДУ ВЫПЛАТУ ⏳ |
+| КРАСАВА! 😎 | СПАСИБО! 🥰 | ПЛАЧУ 😭 | ЧЕГО?! 🤨 |
+| ДОБРОЕ УТРО ☕ | БЕСИТ! 😡 | ЛЕГ СПАТЬ 😴 | ЕСТЬ ИДЕЯ! 💡 |
+| ПРОФИТ! 📈 | ПРИНЯЛ! 🫡 | МИНУС... 😵 | ПРИВЕТ! 👋 |
+
+Each sticker is a 512×512 transparent WEBP (Telegram's static sticker format). Preview: `../stickers_preview.png`.
+
+Upload the pack once (needs `aiogram` 3.x):
+
+```bash
+BOT_TOKEN=123:abc OWNER_ID=111222333 python3 -m emerald_stickers.upload_stickers
+```
+
+It prints the `t.me/addstickers/...` link. Running it again only adds new stickers.
+
+**Adding a sticker:** add an entry to `S` in `../stickers.html` (caption, emoji, eyes/mouth/arms and
+props), then run `node ../tools/render_stickers.js`.
