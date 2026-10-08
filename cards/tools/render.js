@@ -12,8 +12,13 @@ const NAMES = {
   ok: 'application_accepted', no: 'application_rejected', wallet: 'wallet_trx', nick: 'nickname',
   address: 'wallet_address', payout: 'payout_choose', payout_ok: 'payout_done', payout_no: 'payout_rejected',
   no_wallet: 'payout_no_wallet', amount: 'payout_amount', branch: 'branch_info',
+  forum: 'forum_link', sent: 'application_sent', failed: 'application_failed', nick_saved: 'nickname_saved',
+  number: 'enter_number', promo: 'promo_name', promo_exists: 'promo_exists', domain_bad: 'domain_bad_format',
+  domain_added: 'domain_added', domain_exists: 'domain_exists', domains: 'domains_list',
+  materials: 'menu_materials', info: 'menu_info', domains_none: 'domains_not_found',
 };
-const THEME = { no: 'ruby', no_wallet: 'ruby', payout_no: 'ruby' };
+const THEME = { no: 'ruby', no_wallet: 'ruby', payout_no: 'ruby', failed: 'ruby', number: 'ruby',
+  promo_exists: 'ruby', domain_bad: 'ruby', domain_exists: 'ruby', domains_none: 'ruby' };
 const ASSETS = path.join(DIR, 'bot', 'emerald_cards', 'assets');
 
 (async () => {

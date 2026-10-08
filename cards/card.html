@@ -80,6 +80,11 @@
   .tile{display:flex;flex-direction:column;gap:10px;padding:18px 20px;border-radius:18px;
     background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09)}
   .tile .pl-label{color:#7fa595}
+  /* domains list layout (rows are drawn by the bot) */
+  body.list .left{width:740px}
+  body.list .status{display:none}
+  body.list h1{font-size:64px;margin-top:40px}
+  body.list .gemwrap{right:40px;transform:translateY(-50%) scale(.78)}
 </style>
 </head>
 <body>
@@ -218,6 +223,46 @@
         <rect x="156" y="262" width="88" height="10" rx="5" fill="#f2fff9"/>
         <circle cx="200" cy="236" r="7" fill="var(--c3)"/>
       </g>
+      <g id="icon-link" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><g transform="rotate(-45 200 230)" fill="none" stroke="currentColor" stroke-width="12"><rect x="146" y="210" width="62" height="40" rx="20"/><rect x="192" y="210" width="62" height="40" rx="20"/></g></g>
+        <g style="color:#f2fff9"><g transform="rotate(-45 200 230)" fill="none" stroke="currentColor" stroke-width="12"><rect x="146" y="210" width="62" height="40" rx="20"/><rect x="192" y="210" width="62" height="40" rx="20"/></g></g>
+      </g>
+      <g id="icon-plane" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M150,230 L250,186 L226,274 L198,244 Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M250,186 L198,244 L196,272" fill="none" stroke="var(--c3)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
+        <g style="color:#f2fff9"><path d="M150,230 L250,186 L226,274 L198,244 Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M250,186 L198,244 L196,272" fill="none" stroke="var(--c3)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </g>
+      <g id="icon-retry" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M236,212 A42,42 0 1 0 242,236" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><path d="M244,184 L240,216 L208,212" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>
+        <g style="color:#f2fff9"><path d="M236,212 A42,42 0 1 0 242,236" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><path d="M244,184 L240,216 L208,212" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </g>
+      <g id="icon-num" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><text x="200" y="248" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="52" letter-spacing="-1" fill="currentColor">123</text></g>
+        <g style="color:#f2fff9"><text x="200" y="248" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="52" letter-spacing="-1" fill="currentColor">123</text></g>
+      </g>
+      <g id="icon-ticket" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M158,198 H242 Q252,198 252,208 V218 A12,12 0 0 0 252,242 V252 Q252,262 242,262 H158 Q148,262 148,252 V242 A12,12 0 0 0 148,218 V208 Q148,198 158,198 Z" fill="currentColor"/><text x="200" y="245" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="40" fill="var(--c3)">%</text></g>
+        <g style="color:#f2fff9"><path d="M158,198 H242 Q252,198 252,208 V218 A12,12 0 0 0 252,242 V252 Q252,262 242,262 H158 Q148,262 148,252 V242 A12,12 0 0 0 148,218 V208 Q148,198 158,198 Z" fill="currentColor"/><text x="200" y="245" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="40" fill="var(--c3)">%</text></g>
+      </g>
+      <g id="icon-globe" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><g fill="none" stroke="currentColor" stroke-width="9"><circle cx="200" cy="230" r="44"/><ellipse cx="200" cy="230" rx="18" ry="44"/><path d="M158,230 H242 M164,208 H236 M164,252 H236" stroke-width="7"/></g></g>
+        <g style="color:#f2fff9"><g fill="none" stroke="currentColor" stroke-width="9"><circle cx="200" cy="230" r="44"/><ellipse cx="200" cy="230" rx="18" ry="44"/><path d="M158,230 H242 M164,208 H236 M164,252 H236" stroke-width="7"/></g></g>
+      </g>
+      <g id="icon-book" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M200,204 Q178,190 152,192 V262 Q178,260 200,274 Q222,260 248,262 V192 Q222,190 200,204 Z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M200,204 V272" stroke="currentColor" stroke-width="10"/></g>
+        <g style="color:#f2fff9"><path d="M200,204 Q178,190 152,192 V262 Q178,260 200,274 Q222,260 248,262 V192 Q222,190 200,204 Z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/><path d="M200,204 V272" stroke="currentColor" stroke-width="10"/></g>
+      </g>
+      <g id="icon-info" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><circle cx="200" cy="202" r="9" fill="currentColor"/><path d="M200,226 V264" stroke="currentColor" stroke-width="16" stroke-linecap="round"/></g>
+        <g style="color:#f2fff9"><circle cx="200" cy="202" r="9" fill="currentColor"/><path d="M200,226 V264" stroke="currentColor" stroke-width="16" stroke-linecap="round"/></g>
+      </g>
     </svg>
     <div class="sparkle" style="left:300px;top:-6px"></div>
     <div class="sparkle" style="left:-8px;top:120px;transform:scale(.6)"></div>
@@ -286,7 +331,21 @@
       title:'Информация<br><span>о филиале</span>',
       text:"",
       extra:'<div class="tiles"><div class="tile"><span class="pl-label">Участники</span><span class="slot grad" data-slot="members" data-size="50" data-weight="bold" data-sample="128" style="width:150px;height:60px;line-height:60px"></span></div><div class="tile"><span class="pl-label">Оборот</span><span class="slot grad" data-slot="turnover" data-size="50" data-weight="bold" data-sample="12 345.67 $" style="width:270px;height:60px;line-height:60px"></span></div><div class="tile"><span class="pl-label">Процент</span><span class="slot grad" data-slot="percent" data-size="50" data-weight="bold" data-sample="15%" style="width:130px;height:60px;line-height:60px"></span></div></div>',
-      foot:"Данные на момент запроса" }
+      foot:"Данные на момент запроса" },
+    forum: { icon:'link', status:'Заявка', title:'Ссылка на<br><span>профиль</span>', text:'Отлично! Теперь отправьте <b>ссылку на свой профиль</b> форума.', foot:'Отправьте ссылку ответным сообщением' },
+    sent: { icon:'plane', status:'На рассмотрении', title:'Заявка<br><span>отправлена</span>', text:'Заявка успешно отправлена. <b>Ожидайте решения администрации.</b>', foot:'Решение придёт в этот чат' },
+    failed: { theme:'no', icon:'retry', status:'Ошибка', title:'Заявка<br><span>не отправлена</span>', text:'Что-то пошло не так. <b>Попробуйте ещё раз.</b>', foot:'' },
+    nick_saved: { icon:'star', cls:'has-plate', status:'Ник сохранён', title:'Ник<br><span>сохранён</span>', text:'Новый ник успешно сохранён <b>и&nbsp;будет виден в&nbsp;отстуке</b>.', extra:'<div class="plate"><span class="pl-label">Ник</span><span class="pl-sep"></span><span class="slot grad" data-slot="nick" data-size="40" data-weight="bold" data-sample="Emerald" style="width:380px;height:48px;line-height:48px"></span></div>' },
+    number: { theme:'no', icon:'num', status:'Неверный ввод', title:'Введите<br><span>число</span>', text:'Значение должно быть <b>числом</b>, например&nbsp;100.', foot:'Только цифры, без букв и символов' },
+    promo: { icon:'ticket', status:'Промокод', title:'Новый<br><span>промокод</span>', text:'Введите <b>название промокода</b>.', foot:'Отправьте название ответным сообщением' },
+    promo_exists: { theme:'no', icon:'ticket', status:'Промокод занят', title:'Промокод<br><span>уже есть</span>', text:'Такой промокод уже существует. <b>Введите другое название.</b>', foot:'' },
+    domain_bad: { theme:'no', icon:'globe', cls:'has-plate', status:'Неверный формат', title:'Неверный<br><span>домен</span>', text:'Проверьте формат домена и <b>отправьте ещё раз</b>.', extra:'<div class="plate"><span class="pl-label">Пример</span><span class="pl-sep"></span><span class="slot grad" style="font-size:40px;height:48px;line-height:48px">example.com</span></div>' },
+    domain_added: { icon:'globe', cls:'has-plate', status:'Домен добавлен', title:'Домен<br><span>добавлен</span>', text:'Новый домен <b>успешно добавлен</b> в список.', extra:'<div class="plate"><span class="pl-label">Домен</span><span class="pl-sep"></span><span class="slot grad" data-slot="domain" data-size="40" data-weight="bold" data-sample="example.com" style="width:420px;height:48px;line-height:48px"></span></div>' },
+    domain_exists: { theme:'no', icon:'globe', cls:'has-plate', status:'Домен уже есть', title:'Домен<br><span>уже есть</span>', text:'Этот домен <b>уже есть в списке</b>.', extra:'<div class="plate"><span class="pl-label">Домен</span><span class="pl-sep"></span><span class="slot grad" data-slot="domain" data-size="40" data-weight="bold" data-sample="example.com" style="width:420px;height:48px;line-height:48px"></span></div>' },
+    domains: { icon:'globe', cls:'list', status:'Домены', title:'Актуальные <span>домены</span>', text:'', extra:'<div data-slot="domains" data-kind="list" data-size="22" data-weight="bold" style="width:700px;height:330px;margin-top:28px"></div>', foot:'' },
+    materials: { icon:'book', status:'Материалы', title:"Материалы<br><span>и промокоды</span>", text:'Создавайте промокоды, <b>смотрите статистику</b>, редактируйте и удаляйте их.', foot:'Выберите действие ниже' },
+    info: { icon:'info', status:'Информация', title:"Полезные<br><span>ссылки</span>", text:'Чат, новости, депозит, <b>мануал и саппорт</b>&nbsp;— всё в кнопках ниже.', foot:'Ссылки открываются в Telegram и браузере' },
+    domains_none: { theme:'no', icon:'globe', status:'Домены', title:"Домены<br><span>не найдены</span>", text:'Сейчас <b>нет активных доменов</b>. Загляните позже.', foot:'' },
   };
   const q = new URLSearchParams(location.search);
   const k = V[q.get("v")] ? q.get("v") : "ok";
@@ -301,13 +360,13 @@
   document.getElementById("icon-"+d.icon).style.display = "";
   for (const el of document.querySelectorAll("[data-slot]")) {
     el.style.fontSize = el.dataset.size + "px";
-    if (!base) el.textContent = el.dataset.sample;
+    if (!base && el.dataset.sample) el.textContent = el.dataset.sample;
   }
   window.__slots = () => [...document.querySelectorAll("[data-slot]")].map(el => {
     const r = el.getBoundingClientRect();
     return { name: el.dataset.slot, x: r.x, y: r.y, w: r.width, h: r.height,
              size: +el.dataset.size, weight: el.dataset.weight,
-             style: ["grad","white","muted"].find(c => el.classList.contains(c)) };
+             style: ["grad","white","muted"].find(c => el.classList.contains(c)), kind: el.dataset.kind || "text" };
   });
 </script>
 </body>

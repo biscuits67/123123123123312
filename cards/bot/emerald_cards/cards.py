@@ -11,6 +11,16 @@ STATIC = (
     "payout_choose",         # 💸 На какой кошелек вы хотите заказать выплату?
     "payout_done",           # ✅ Выплата совершена
     "payout_rejected",       # ❌ Выплата отклонена
+    "forum_link",            # 👍 Отлично, теперь отправьте ссылку на свой профиль форума
+    "application_sent",      # ✈️ Ваша заявка успешно отправлена!
+    "application_failed",    # ⛔️ Ваша заявка не была отправлена!
+    "enter_number",          # ❌ Введите число
+    "promo_name",            # 💬 Введите название промокода
+    "promo_exists",          # ❌ Данный промокод уже существует
+    "domain_bad_format",     # ❌ Неверный формат домена. Пример: example.com
+    "domains_not_found",     # ❌ Активные домены не найдены
+    "menu_materials",        # 📕 Материалы
+    "menu_info",             # ℹ️ Информация
 )
 
 
@@ -61,3 +71,25 @@ def branch_info(members, turnover, percent) -> bytes:
         turnover=money(round(float(turnover), 2)),
         percent=f"{percent}%",
     )
+
+
+def nickname_saved(nick) -> bytes:
+    """✅ Новый ник успешно сохранен!"""
+    return render("nickname_saved", nick=nick)
+
+
+def domain_added(domain) -> bytes:
+    """✅ Домен {domain} добавлен!"""
+    return render("domain_added", domain=domain)
+
+
+def domain_exists(domain) -> bytes:
+    """❌ Домен {domain} уже существует!"""
+    return render("domain_exists", domain=domain)
+
+
+def domains_list(domains, active_domain=None, all_active=False) -> bytes:
+    """🔗 Актуальные домены.
+    Admin list: domains_list(domains, active_domain) — the active one is highlighted.
+    User menu:  domains_list(active_domains, all_active=True) — every domain gets a check."""
+    return render("domains_list", domains=(list(domains or []), active_domain, all_active))

@@ -88,6 +88,73 @@ def _draw_slot(img: Image.Image, slot: dict, text: str, scale: float, theme: dic
         ImageDraw.Draw(img).text((x, y + h / 2), text, font=font, fill=color, anchor="lm")
 
 
+def _draw_list(img: Image.Image, slot: dict, value, scale: float, theme: dict):
+    """Rows of domains; the active one is highlighted. value = (items, active)."""
+    items, active, all_active = value
+    items = [clean(i) for i in items]
+    active = clean(active) if active else None
+    sc = scale
+    x, y = slot["x"] * sc, slot["y"] * sc
+    w, h = slot["w"] * sc, slot["h"] * sc
+    row_h, gap, r = 56 * sc, 10 * sc, 14 * sc
+    c1, c2 = theme["c1"], theme["c2"]
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    font = _font("bold", round(slot["size"] * sc))
+    small = _font("bold", round(13 * sc))
+    num_font = _font("bold", round(15 * sc))
+
+    if not items:
+        d.rounded_rectangle([x, y, x + w, y + row_h * 1.6], r, fill=(255, 255, 255, 12),
+                            outline=(255, 255, 255, 30), width=max(1, round(sc)))
+        d.text((x + 28 * sc, y + row_h * 0.8), "Домены не добавлены", font=font, fill=MUTED, anchor="lm")
+        img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+        return
+
+    max_rows = max(1, int((h + gap) // (row_h + gap)))
+    rows = list(enumerate(items, 1))
+    more = 0
+    if len(rows) > max_rows:
+        visible = rows[: max_rows - 1]
+        if active in items and all(t != active for _, t in visible):
+            visible[-1] = next(rt for rt in rows if rt[1] == active)
+        more = len(rows) - len(visible)
+        rows = visible
+
+    badge = "АКТИВНЫЙ"
+    badge_w = small.getlength(badge) + 24 * sc
+    for i, (n, text) in enumerate(rows):
+        y0 = y + i * (row_h + gap)
+        cy = y0 + row_h / 2
+        on = text == active
+        check = on or all_active
+        d.rounded_rectangle([x, y0, x + w, y0 + row_h], r,
+                            fill=(*c2, 38) if on else (255, 255, 255, 12),
+                            outline=(*c2, 120) if on else (255, 255, 255, 26), width=max(1, round(sc)))
+        d.text((x + 22 * sc, cy), f"{n:02d}", font=num_font, fill=(*MUTED, 200), anchor="lm")
+        ix = x + 72 * sc
+        if check:
+            d.ellipse([ix - 11 * sc, cy - 11 * sc, ix + 11 * sc, cy + 11 * sc], fill=(*c2, 255))
+            d.line([(ix - 5 * sc, cy), (ix - 1.5 * sc, cy + 4 * sc), (ix + 5.5 * sc, cy - 4 * sc)],
+                   fill=(2, 20, 14, 255), width=max(2, round(3 * sc)), joint="curve")
+        else:
+            d.ellipse([ix - 8 * sc, cy - 8 * sc, ix + 8 * sc, cy + 8 * sc],
+                      outline=(*MUTED, 160), width=max(1, round(2 * sc)))
+        tx = x + 100 * sc
+        max_w = (x + w - 20 * sc - (badge_w + 16 * sc if on else 0)) - tx
+        t, f = _fit(text, "bold", slot["size"] * sc, max_w)
+        d.text((tx, cy), t, font=f, fill=(*(WHITE if on else (200, 225, 214)), 255), anchor="lm")
+        if on:
+            bx1 = x + w - 18 * sc
+            bx0 = bx1 - badge_w
+            d.rounded_rectangle([bx0, cy - 15 * sc, bx1, cy + 15 * sc], 15 * sc, fill=(*c1, 40))
+            d.text(((bx0 + bx1) / 2, cy), badge, font=small, fill=(*c1, 255), anchor="mm")
+    if more:
+        y0 = y + len(rows) * (row_h + gap)
+        d.text((x + 22 * sc, y0 + row_h / 2), f"+ ещё {more}", font=num_font, fill=(*MUTED, 255), anchor="lm")
+    img.paste(Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB"))
+
+
 def render(card: str, fmt: str = "JPEG", **values) -> bytes:
     """Draw values onto a dynamic card and return image bytes.
 
@@ -100,7 +167,10 @@ def render(card: str, fmt: str = "JPEG", **values) -> bytes:
     for name, slot in spec["slots"].items():
         if name not in values:
             raise TypeError(f"card {card!r} needs value {name!r}")
-        _draw_slot(img, slot, clean(values[name]), spec["scale"], theme)
+        if slot.get("kind") == "list":
+            _draw_list(img, slot, values[name], spec["scale"], theme)
+        else:
+            _draw_slot(img, slot, clean(values[name]), spec["scale"], theme)
     buf = io.BytesIO()
     if fmt.upper() == "PNG":
         img.save(buf, "PNG", optimize=False, compress_level=3)

@@ -61,3 +61,37 @@ async def branch(message, branch, owner_name, owner_username, owner_id, members_
         ),
         parse_mode="HTML",
     )
+
+
+# --- menu sections: a card + your inline keyboard in one message ---
+async def menu_materials(msg, materials_btns):
+    await msg.answer_photo(FSInputFile(cards.static("menu_materials")), reply_markup=materials_btns)
+
+
+async def menu_info(msg, kb):
+    await msg.answer_photo(FSInputFile(cards.static("menu_info")), reply_markup=kb)
+
+
+async def menu_domains(msg, active_domains, keyboard):
+    if not active_domains:
+        await msg.answer_photo(FSInputFile(cards.static("domains_not_found")),
+                               caption="❌ Активные домены не найдены")
+        return
+    text = "🔗 <b>Актуальные домены</b>\n\n" + "".join(f"• <code>{d}</code>\n" for d in active_domains)
+    await msg.answer_photo(
+        photo(cards.domains_list(active_domains, all_active=True)),
+        caption=text, parse_mode="HTML", reply_markup=keyboard,
+    )
+
+
+async def admin_domains(msg, domains, active_domain, text):
+    # text = your existing "🔗 <b>Актуальные домены</b>..." string
+    await msg.answer_photo(photo(cards.domains_list(domains, active_domain)), caption=text, parse_mode="HTML")
+
+
+async def domain_added(msg, domain):
+    await msg.answer_photo(photo(cards.domain_added(domain)), caption=f"✅ Домен {domain} добавлен!")
+
+
+# Note: a text message ("Загрузка...") can't be edited into a photo.
+# Delete it and send the photo instead:  await msg2edit.delete(); await msg.answer_photo(...)

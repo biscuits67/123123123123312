@@ -91,5 +91,68 @@
         "style": "grad"
       }
     }
+  },
+  "nickname_saved": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "nick": {
+        "x": 176.375,
+        "y": 467.640625,
+        "w": 380,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad",
+        "kind": "text"
+      }
+    }
+  },
+  "domain_added": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "domain": {
+        "x": 202.3125,
+        "y": 450.84375,
+        "w": 420,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad",
+        "kind": "text"
+      }
+    }
+  },
+  "domain_exists": {
+    "theme": "ruby",
+    "scale": 1.5,
+    "slots": {
+      "domain": {
+        "x": 202.3125,
+        "y": 450.84375,
+        "w": 420,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad",
+        "kind": "text"
+      }
+    }
+  },
+  "domains_list": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "domains": {
+        "x": 84,
+        "y": 240.71875,
+        "w": 700,
+        "h": 330,
+        "size": 22,
+        "weight": "bold",
+        "kind": "list"
+      }
+    }
   }
 }
