@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 cards/owner_variants/
+cards/blender/renders/
+cards/blender/tex/
