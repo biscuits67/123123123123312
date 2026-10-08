@@ -21,6 +21,9 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "renders")
 FONT = "/usr/share/fonts/opentype/inter/InterDisplay-Black.otf"
+# downloaded models (not in git, see README): ATM, hazmat suit, cash pile, money pallet, cash briefcase
+MODELS = os.environ.get("EMERALD_MODELS", os.path.join(HERE, "models"))
+HAVE_MODELS = os.path.isdir(MODELS)
 FPS, FRAMES = 24, 120
 EM = {"c1": (0.16, 0.89, 0.51), "c2": (0.01, 0.55, 0.25), "c3": (0.003, 0.25, 0.11), "neon": (0.12, 1.0, 0.55)}
 rnd = random.Random(7)
@@ -170,6 +173,97 @@ def make_textures():
     br.save(os.path.join(HERE, "tex", "brick.png"))
 
 
+
+# ---------------------------------------------------------------- downloaded models
+def import_model(path):
+    """Import a .glb/.fbx and return its objects under one empty, sitting on the floor, centred."""
+    before = set(bpy.data.objects)
+    if path.lower().endswith((".glb", ".gltf")):
+        bpy.ops.import_scene.gltf(filepath=path)
+    else:
+        bpy.ops.import_scene.fbx(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    bpy.context.view_layer.update()
+    meshes = [o for o in new if o.type == "MESH"]
+    pts = [o.matrix_world @ Vector(c) for o in meshes for c in o.bound_box]
+    mn = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
+    mx = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
+    root = bpy.data.objects.new(os.path.basename(path), None)
+    bpy.context.scene.collection.objects.link(root)
+    pivot = Vector(((mn.x + mx.x) / 2, (mn.y + mx.y) / 2, mn.z))
+    for o in new:
+        if o.parent is None:
+            o.parent = root
+            o.location -= pivot
+    return root, meshes, mx - mn
+
+
+def instance(root, name):
+    """Linked copy of an imported model (shares meshes and materials)."""
+    copy = bpy.data.objects.new(name, None)
+    bpy.context.scene.collection.objects.link(copy)
+    def dup(src, parent):
+        o = bpy.data.objects.new(src.name + "_i", src.data)
+        bpy.context.scene.collection.objects.link(o)
+        o.parent, o.matrix_parent_inverse = parent, src.matrix_parent_inverse.copy()
+        o.location, o.rotation_mode = src.location.copy(), src.rotation_mode
+        o.rotation_euler, o.rotation_quaternion, o.scale = src.rotation_euler.copy(), src.rotation_quaternion.copy(), src.scale.copy()
+        for ch in src.children:
+            dup(ch, o)
+    for ch in root.children:
+        dup(ch, copy)
+    return copy
+
+
+def place(root, size, height, loc, rz=0.0, mirror=False):
+    k = height / size.z
+    root.scale = (-k if mirror else k, k, k)
+    root.location, root.rotation_euler = loc, (0, 0, rz)
+
+
+def place_models(atm_screen, neon, gold, leather, bill):
+    P = lambda *a: os.path.join(MODELS, *a)
+    # ATMs: replace the blue screen with the Emerald one, add a neon strip
+    atm, meshes, size = import_model(P("atm", "atm_machine.glb"))
+    for o in meshes:
+        for i, m in enumerate(o.data.materials):
+            if m and "Screen" in m.name:
+                o.data.materials[i] = atm_screen
+    place(atm, size, 2.2, (-4.6, 1.6, 0), math.radians(32))
+    place(instance(atm, "atm_r"), size, 2.2, (4.6, 1.6, 0), math.radians(-32))
+    # agents: the hazmat suit turned into a black suit with a glowing emerald visor
+    agent, meshes, size = import_model(P("hazmat-suit", "source", "hazmat suit model unrigged.fbx"))
+    suit = mat("suit", (0.004, 0.005, 0.005), rough=0.42, coat=0.3)
+    suit.node_tree.nodes["Principled BSDF"].inputs["Sheen Weight"].default_value = 0.15
+    visor = mat("visor", (0.02, 0.4, 0.2), metal=0.3, rough=0.05, coat=1.0, emit=EM["neon"], emit_k=4.0)
+    rubber = mat("rubber", (0.01, 0.01, 0.01), rough=0.3, coat=0.8)
+    trim = mat("trim", (0.05, 0.06, 0.06), metal=1.0, rough=0.3)
+    for o in meshes:
+        for i, m in enumerate(o.data.materials):
+            n = (m.name if m else "").lower()
+            o.data.materials[i] = visor if n == "faceplate" else trim if "trim" in n else rubber if ("boot" in n or "glove" in n) else suit
+    place(agent, size, 1.86, (-2.5, -0.7, 0), math.radians(-20))
+    place(instance(agent, "agent_r"), size, 1.86, (2.5, -0.7, 0), math.radians(20), mirror=True)
+    # money pallet behind the stone
+    pallet, meshes, size = import_model(P("money-stacks-20-usd", "source", "Money stackssss.glb"))
+    place(pallet, size, 1.7, (0.3, 3.6, 0), math.radians(6))
+    # cash piles scattered on the floor
+    pile, meshes, size = import_model(P("cash-pile-and-money-stacks", "source", "inner", "cashpile 4.fbx"))
+    spots = [(-1.3, -1.1, 20), (1.5, -1.4, -30), (-3.6, 1.6, 70), (3.8, 1.2, -60), (0.2, -2.9, 150), (-4.6, -1.0, 10), (4.4, -2.2, 40)]
+    for n, (x, y, r) in enumerate(spots):
+        place(pile if n == 0 else instance(pile, f"pile{n}"), size, 0.26 + 0.06 * (n % 3), (x, y, 0), math.radians(r))
+    # open cash briefcase, foreground left (the FBX has no materials -> assign them)
+    case, meshes, size = import_model(P("cash-briefcase", "source", "cashobjcase.fbx"))
+    for o in meshes:
+        o.data.materials.clear()
+        o.data.materials.append(bill if o.name.startswith("node_id3") else gold if o.name.startswith(("Layer_5", "Layer_6", "Layer_3")) else leather)
+    place(case, size, 0.62, (-1.25, -1.9, 0), math.radians(22))
+    l = bpy.data.lights.new("case_glow", "AREA")
+    l.size, l.color, l.energy = 0.8, EM["neon"], 120
+    lo = bpy.data.objects.new("case_glow", l)
+    bpy.context.scene.collection.objects.link(lo)
+    lo.location, lo.rotation_euler = (-1.25, -2.7, 1.4), (math.radians(40), 0, 0)
+
 # ---------------------------------------------------------------- the scene
 def build():
     reset()
@@ -216,11 +310,11 @@ def build():
     gold = mat("gold", (0.85, 0.62, 0.25), metal=1.0, rough=0.18)
     crown_m = mat("crown", (0.45, 0.95, 0.75), metal=0.9, rough=0.2, coat=1.0, emit=(0.1, 0.8, 0.45), emit_k=0.25)
     pedestal_m = mat("pedestal", (0.01, 0.012, 0.012), metal=0.9, rough=0.2, coat=1.0)
-    gem_m = mat("emerald", (0.05, 0.8, 0.4), rough=0.0, transmission=1.0, ior=1.58, coat=1.0, emit=(0.02, 0.7, 0.3), emit_k=0.55)
+    gem_m = mat("emerald", (0.05, 0.8, 0.4), rough=0.0, transmission=1.0, ior=1.58, coat=1.0, emit=(0.01, 0.6, 0.24), emit_k=0.3)
     # emerald depth: green volume absorption inside the stone
     vol = gem_m.node_tree.nodes.new("ShaderNodeVolumeAbsorption")
     vol.inputs["Color"].default_value = (0.05, 0.75, 0.38, 1)
-    vol.inputs["Density"].default_value = 1.8
+    vol.inputs["Density"].default_value = 2.6
     gem_m.node_tree.links.new(vol.outputs[0], gem_m.node_tree.nodes["Material Output"].inputs["Volume"])
 
     # floor + wall
@@ -252,7 +346,6 @@ def build():
     # neon strips along the scaffold levels (the green rim light of the whole scene)
     for z in (2.32, 6.92):
         obj("neon_strip", box_mesh("ns", 21.4, 0.04, 0.04), neon_soft, loc=(0, ys[0] - 0.08, z))
-    stairs = obj("stairs", box_mesh("st", 1.4, 0.8, 2.3), steel, loc=(0, 6.8, 8.05))
 
     # the sign: two lines of extruded letters standing on top of the scaffold
     def sign_text(body, size, z):
@@ -293,8 +386,9 @@ def build():
         pad.parent = body
         slot = obj("atm_slot", box_mesh("slot", 0.4, 0.02, 0.03), white_led, loc=(0, -0.41, -0.32))
         slot.parent = body
-    atm(-5.4, math.radians(28))
-    atm(5.4, math.radians(-28))
+    if not HAVE_MODELS:
+        atm(-5.4, math.radians(28))
+        atm(5.4, math.radians(-28))
 
     # cash: one stack mesh, many linked copies
     stack_me = box_mesh("stack", 0.33, 0.156, 0.12)
@@ -306,43 +400,49 @@ def build():
         sc.collection.objects.link(o)
         o.location, o.rotation_euler = loc, (tilt[0], tilt[1], rz)
         return o
-    # mountain of cash on a pallet behind the stone
-    for i in range(520):
-        r = rnd.random() ** 0.6 * 2.6
-        a = rnd.random() * math.tau
-        x, y = math.cos(a) * r * 1.4, 4.3 + math.sin(a) * r * 0.5
-        hgt = max(0.0, 1.9 - r * 0.72) * rnd.uniform(0.75, 1.0)
-        stack((x, y, 0.06 + hgt * rnd.random()), rnd.random() * math.tau, (rnd.uniform(-.3, .3), rnd.uniform(-.3, .3)))
-    obj("pallet", box_mesh("pal", 5.6, 2.2, 0.12), mat("wood", (0.09, 0.06, 0.035), rough=0.8), loc=(0, 4.3, 0.06))
-    # scattered stacks on the floor
-    for i in range(70):
-        a = rnd.random() * math.tau
-        r = 1.6 + rnd.random() * 5.5
-        stack((math.cos(a) * r, -1 + math.sin(a) * r * 0.7, 0.06), rnd.random() * math.tau)
-    # neat towers next to the pedestal
-    for (x, y) in ((-1.6, -0.4), (1.7, -0.2), (1.45, 0.45)):
-        for k in range(rnd.randint(5, 9)):
-            stack((x + rnd.uniform(-.02, .02), y, 0.06 + k * 0.121), rnd.uniform(-.08, .08))
+    if not HAVE_MODELS:
+        # mountain of cash on a pallet behind the stone
+        for i in range(520):
+            r = rnd.random() ** 0.6 * 2.6
+            a = rnd.random() * math.tau
+            x, y = math.cos(a) * r * 1.4, 4.3 + math.sin(a) * r * 0.5
+            hgt = max(0.0, 1.9 - r * 0.72) * rnd.uniform(0.75, 1.0)
+            stack((x, y, 0.06 + hgt * rnd.random()), rnd.random() * math.tau, (rnd.uniform(-.3, .3), rnd.uniform(-.3, .3)))
+        obj("pallet", box_mesh("pal", 5.6, 2.2, 0.12), mat("wood", (0.09, 0.06, 0.035), rough=0.8), loc=(0, 4.3, 0.06))
+        # scattered stacks on the floor
+        for i in range(70):
+            a = rnd.random() * math.tau
+            r = 1.6 + rnd.random() * 5.5
+            stack((math.cos(a) * r, -1 + math.sin(a) * r * 0.7, 0.06), rnd.random() * math.tau)
+    if not HAVE_MODELS:
+        # neat towers next to the pedestal
+        for (x, y) in ((-1.6, -0.4), (1.7, -0.2), (1.45, 0.45)):
+            for k in range(rnd.randint(5, 9)):
+                stack((x + rnd.uniform(-.02, .02), y, 0.06 + k * 0.121), rnd.uniform(-.08, .08))
 
-    # neon briefcase, foreground left
-    case = obj("case", box_mesh("case", 1.5, 0.42, 1.05), leather, loc=(-3.3, -2.3, 0.53), rot=(0, 0, math.radians(24)))
-    bevel(case, 0.05, 4)
-    for z in (0.5, -0.5):
-        e = obj("case_neon", box_mesh("cn", 1.56, 0.47, 0.028), neon, loc=(0, 0, z * 1.03))
-        e.parent = case
-    for x in (-0.3, 0.3):
-        cl = obj("clasp", box_mesh("cl", 0.12, 0.46, 0.08), gold, loc=(x, 0, 0.42))
-        cl.parent = case
-    handle = bpy.data.meshes.new("handle")
-    bm = bmesh.new()
-    bmesh.ops.create_circle(bm, segments=24, radius=0.17)
-    bm.to_mesh(handle)
-    bm.free()
-    ho = obj("handle", handle, leather, loc=(0, 0, 0.6), rot=(math.radians(90), 0, 0))
-    ho.parent = case
-    sk = ho.modifiers.new("skin", "SKIN")
-    for v in ho.data.skin_vertices[0].data:
-        v.radius = (0.035, 0.035)
+    if not HAVE_MODELS:
+        # neon briefcase, foreground left
+        case = obj("case", box_mesh("case", 1.5, 0.42, 1.05), leather, loc=(-3.3, -2.3, 0.53), rot=(0, 0, math.radians(24)))
+        bevel(case, 0.05, 4)
+        for z in (0.5, -0.5):
+            e = obj("case_neon", box_mesh("cn", 1.56, 0.47, 0.028), neon, loc=(0, 0, z * 1.03))
+            e.parent = case
+        for x in (-0.3, 0.3):
+            cl = obj("clasp", box_mesh("cl", 0.12, 0.46, 0.08), gold, loc=(x, 0, 0.42))
+            cl.parent = case
+        handle = bpy.data.meshes.new("handle")
+        bm = bmesh.new()
+        bmesh.ops.create_circle(bm, segments=24, radius=0.17)
+        bm.to_mesh(handle)
+        bm.free()
+        ho = obj("handle", handle, leather, loc=(0, 0, 0.6), rot=(math.radians(90), 0, 0))
+        ho.parent = case
+        sk = ho.modifiers.new("skin", "SKIN")
+        for v in ho.data.skin_vertices[0].data:
+            v.radius = (0.035, 0.035)
+
+    else:
+        place_models(atm_screen, neon, gold, leather, bill)
 
     # pedestal + emerald + crown (the hero)
     ped = bpy.data.meshes.new("ped")
