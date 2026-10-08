@@ -114,10 +114,10 @@ def neon_text(body, size, loc, material, tube=0.022, rot=(math.radians(90), 0, 0
     return o
 
 
-def solid_text(body, size, loc, materials, extrude=0.06, rot=(math.radians(90), 0, 0)):
+def solid_text(body, size, loc, materials, extrude=0.04, rot=(math.radians(90), 0, 0), bevel=0.008):
     cu = bpy.data.curves.new(body, "FONT")
     cu.body, cu.font, cu.size = body, bpy.data.fonts.load(FONT), size
-    cu.extrude, cu.bevel_depth, cu.bevel_resolution = extrude, 0.008, 2
+    cu.extrude, cu.bevel_depth, cu.bevel_resolution = extrude, bevel, 2
     cu.align_x, cu.align_y = "CENTER", "CENTER"
     cu.space_character = 1.25
     o = bpy.data.objects.new(body, cu)
@@ -183,6 +183,121 @@ def facing_plane(name, w, h):
     return me
 
 
+
+def rigged_agent(loc, rz):
+    """Hazmat suit + a hand-built 17-bone skeleton. Weights come from distance to the bone segments
+    (smooth falloff, three strongest bones per vertex). The rest pose has the arms out to the sides;
+    the animation lowers them: left hand on the counter, right hand palm-up holding the emerald."""
+    import numpy as np
+    from mathutils import Matrix, Quaternion
+    root, meshes, size = import_model(P("hazmat-suit", "source", "hazmat suit model unrigged.fbx"))
+    body = meshes[0]
+    white = mat("suit_white", (0.5, 0.52, 0.5), rough=0.6, coat=0.05)
+    white.node_tree.nodes["Principled BSDF"].inputs["Sheen Weight"].default_value = 0.4
+    visor = mat("visor", (0.01, 0.05, 0.03), metal=0.3, rough=0.03, coat=1.0, emit=EM["neon"], emit_k=2.5)
+    rubber = mat("rubber", (0.01, 0.01, 0.01), rough=0.3, coat=0.8)
+    trim = mat("trim", (0.05, 0.06, 0.06), metal=1.0, rough=0.3)
+    for i, m in enumerate(body.data.materials):
+        n = (m.name if m else "").lower()
+        body.data.materials[i] = visor if n == "faceplate" else trim if "trim" in n else rubber if ("boot" in n or "glove" in n) else white
+    # bake the import transform into the mesh so it sits at the origin, facing +x
+    bpy.context.view_layer.update()
+    mw = body.matrix_world.copy()
+    body.parent = None
+    body.data.transform(mw)
+    body.matrix_world = Matrix.Identity(4)
+    vs = np.array([v.co[:] for v in body.data.vertices])
+    off = np.array([(vs[:, 0].min() + vs[:, 0].max()) / 2, (vs[:, 1].min() + vs[:, 1].max()) / 2, vs[:, 2].min()])
+    body.data.transform(Matrix.Translation(Vector(-off)))
+    vs = vs - off
+    B = {   # name: (head, tail, parent) in model space, facing +x, arms along y
+        "hips": ((0, 0, 0.92), (0, 0, 1.08), None), "spine": ((0, 0, 1.08), (0, 0, 1.28), "hips"),
+        "chest": ((0, 0, 1.28), (0, 0, 1.47), "spine"), "neck": ((0, 0, 1.47), (0, 0, 1.62), "chest"),
+        "head": ((0, 0, 1.62), (0, 0, 1.885), "neck"),
+        "shoulder.L": ((0, -0.06, 1.44), (0, -0.2, 1.45), "chest"), "upper.L": ((0, -0.2, 1.45), (0.05, -0.45, 1.5), "shoulder.L"),
+        "fore.L": ((0.05, -0.45, 1.5), (0.16, -0.66, 1.55), "upper.L"), "hand.L": ((0.16, -0.66, 1.55), (0.2, -0.75, 1.57), "fore.L"),
+        "shoulder.R": ((0, 0.06, 1.43), (0, 0.2, 1.43), "chest"), "upper.R": ((0, 0.2, 1.43), (0.05, 0.45, 1.42), "shoulder.R"),
+        "fore.R": ((0.05, 0.45, 1.42), (0.16, 0.66, 1.41), "upper.R"), "hand.R": ((0.16, 0.66, 1.41), (0.21, 0.75, 1.41), "fore.R"),
+        "thigh.L": ((0, -0.1, 0.92), (0, -0.25, 0.5), "hips"), "shin.L": ((0, -0.25, 0.5), (0, -0.34, 0.08), "thigh.L"),
+        "thigh.R": ((0, 0.1, 0.92), (0, 0.26, 0.5), "hips"), "shin.R": ((0, 0.26, 0.5), (0, 0.36, 0.08), "thigh.R"),
+    }
+    ad = bpy.data.armatures.new("agent_rig")
+    arm = bpy.data.objects.new("agent_rig", ad)
+    bpy.context.scene.collection.objects.link(arm)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    for n, (h, t, par) in B.items():
+        eb = ad.edit_bones.new(n)
+        eb.head, eb.tail = h, t
+    for n, (h, t, par) in B.items():
+        if par:
+            ad.edit_bones[n].parent = ad.edit_bones[par]
+            ad.edit_bones[n].use_connect = False
+    bpy.ops.object.mode_set(mode="OBJECT")
+    # weights: distance to each bone segment, sharp falloff, top 3
+    names = list(B)
+    d = np.zeros((len(vs), len(names)))
+    for k, n in enumerate(names):
+        a, b = np.array(B[n][0]), np.array(B[n][1])
+        ab = b - a
+        t = np.clip(((vs - a) @ ab) / (ab @ ab), 0, 1)
+        d[:, k] = np.linalg.norm(vs - (a + t[:, None] * ab), axis=1)
+    w = 1.0 / (d + 0.01) ** 6
+    keep = np.argsort(-w, axis=1)[:, :3]
+    mask = np.zeros_like(w, dtype=bool)
+    np.put_along_axis(mask, keep, True, axis=1)
+    w = np.where(mask, w, 0)
+    w /= w.sum(1, keepdims=True)
+    for k, n in enumerate(names):
+        g = body.vertex_groups.new(name=n)
+        idx = np.nonzero(w[:, k] > 0.01)[0]
+        for vi in idx:
+            g.add([int(vi)], float(w[vi, k]), "REPLACE")
+    body.parent = arm
+    mod = body.modifiers.new("rig", "ARMATURE")
+    mod.object = arm
+    # place the rig in the scene
+    arm.location, arm.rotation_euler = loc, (0, 0, rz)
+    bpy.data.objects.remove(root)
+
+    # ---- pose helpers (armature space)
+    pb = arm.pose.bones
+    rest = {n: ad.bones[n].matrix_local.to_quaternion() for n in names}
+    def aim(n, target_dir, parent_q=Quaternion()):
+        v_rest = (ad.bones[n].tail_local - ad.bones[n].head_local).normalized()
+        cur = parent_q @ v_rest
+        q = cur.rotation_difference(Vector(target_dir).normalized())
+        total = q @ parent_q
+        local = rest[n].inverted() @ parent_q.inverted() @ q @ parent_q @ rest[n]
+        pb[n].rotation_mode = "QUATERNION"
+        pb[n].rotation_quaternion = local
+        return total
+    def twist(n, axis_arm, angle):
+        local = rest[n].inverted() @ Quaternion(axis_arm, angle) @ rest[n]
+        pb[n].rotation_mode = "QUATERNION"
+        pb[n].rotation_quaternion = local
+    for f in range(1, FRAMES + 1, 2):
+        u = f / FRAMES * math.tau
+        breathe = math.sin(u * 2)
+        twist("spine", (0, 1, 0), 0.04 + 0.015 * breathe)            # lean slightly over the counter
+        twist("chest", (0, 0, 1), 0.06 * math.sin(u))                  # shoulders sway
+        twist("head", (0, 0, 1), 0.22 * math.sin(u + 0.6))             # looks around the street
+        lift = 0.04 * math.sin(u * 2 + 1)
+        # right arm: forearm forward, palm up in front of the chest -> holds the emerald
+        qs = aim("shoulder.R", (0.05, 1, -0.12))
+        qu = aim("upper.R", (0.35, 0.45, -0.82), qs)
+        qf = aim("fore.R", (1.0, -0.15, 0.32 + lift), qu)
+        aim("hand.R", (1.0, -0.1, 0.12), qf)
+        # left arm: hand resting on the counter
+        qs = aim("shoulder.L", (0.05, -1, -0.12))
+        qu = aim("upper.L", (0.3, -0.42, -0.86), qs)
+        qf = aim("fore.L", (1.0, 0.25, -0.1 + 0.02 * breathe), qu)
+        aim("hand.L", (1.0, 0.3, -0.25), qf)
+        for n in names:
+            if pb[n].rotation_mode == "QUATERNION":
+                pb[n].keyframe_insert("rotation_quaternion", frame=f)
+    return arm, "hand.R"
+
 # ---------------------------------------------------------------- scene
 def build():
     reset()
@@ -226,7 +341,7 @@ def build():
     band = obj("signband", box_mesh("sb", 7.6, 0.4, 1.25), mat("signbox", (0.005, 0.006, 0.006), metal=0.7, rough=0.25, coat=1), loc=(0, 0.05, 3.95))
     bevel(band, 0.03)
     neon_main = neon_text("EMERALD", 0.86, (0, -0.17, 4.14), neon, tube=0.026)
-    exch = solid_text("EXCHANGE", 0.36, (0, -0.17, 3.52), [white_box])
+    exch = solid_text("EXCHANGE", 0.34, (0, -0.17, 3.52), [white_box], bevel=0.0)
     obj("sign_led", box_mesh("sl", 7.5, 0.03, 0.03), neon_led, loc=(0, -0.16, 3.33))
     # upper floors of the building
     up = obj("upper", box_mesh("up", 11.6, 0.4, 9.0), windows, loc=(0, 0.6, 9.1))
@@ -269,8 +384,13 @@ def build():
         nbw = obj("nb_win", box_mesh("nbw", 6.6, 0.05, 8.0), windows, loc=(x, 0.33, 8.2))
         obj("nb_shop", box_mesh("nbs", 5.0, 0.05, 2.4), emission("nb_glow", (1.0, 0.6, 0.35) if side < 0 else (0.5, 0.7, 1.0), 2.5), loc=(x, 0.33, 1.6))
         obj("nb_strip", box_mesh("nbl", 5.4, 0.04, 0.05), emission("nb_neon", (1.0, 0.2, 0.35) if side < 0 else (0.3, 0.6, 1.0), 14), loc=(x, 0.3, 3.1))
-    for x in (-16, 16):
-        obj("far_block", box_mesh("fb", 6, 0.5, 18), windows, loc=(x, 1.5, 9))
+    city, cmeshes, csize = import_model(P("city", "source", "\u0443\u043b\u0438\u0446\u0430 \u0441\u043a\u0435\u0442\u0447.fbx"))
+    for im in bpy.data.images:                    # textures sit next to the fbx
+        if not im.has_data and im.filepath:
+            cand = P("city", "textures", os.path.basename(im.filepath))
+            if os.path.exists(cand):
+                im.filepath = cand
+    place(city, csize, 30, (0, 62, -0.3), math.radians(12))
 
     # street lamps
     for x in (-6.3, 6.3):
@@ -279,23 +399,8 @@ def build():
         obj("lamp_head", box_mesh("lh", 0.5, 0.25, 0.08), warm, loc=(x, -2.75, 5.32))
         light("SPOT", "lamp", (x, -2.75, 5.25), (1.0, 0.75, 0.5), 900, size=0.25, target=(x, -3.5, 0), spot=75)
 
-    # ---- the agent (Mixamo) behind the counter
-    before = set(bpy.data.objects)
-    agent, ameshes, asize = import_model(P("agent", "yelling.fbx"))
-    arm = [o for o in bpy.data.objects if o not in before and o.type == "ARMATURE"][0]
-    place(agent, asize, 1.84, (0, 0.85, 0))
-    body = mat("agent_body", (0.006, 0.007, 0.007), metal=0.5, rough=0.22, coat=1.0)
-    joints = mat("agent_joints", (0.02, 0.4, 0.2), metal=0.8, rough=0.2, emit=EM["neon"], emit_k=3.0)
-    for o in ameshes:
-        o.data.materials.clear()
-        o.data.materials.append(joints if "Joint" in o.name else body)
-    # use 150 frames of the 30 fps animation (arms open) stretched over our 120 frames
-    act = arm.animation_data.action
-    arm.animation_data.action = None
-    track = arm.animation_data.nla_tracks.new()
-    strip = track.strips.new("yell", 1, act)
-    strip.action_frame_start, strip.action_frame_end = 121, 271
-    strip.scale = FRAMES / 150
+    # ---- the agent: hazmat suit with a hand-built skeleton, posed behind the counter
+    arm, hand_bone = rigged_agent((0, 0.95, 0), math.radians(-90))
 
     # ---- levitating emerald over the agent's right hand
     pts = []
@@ -312,25 +417,25 @@ def build():
     gme = bpy.data.meshes.new("gem")
     bm.to_mesh(gme)
     bm.free()
-    gem_m = mat("emerald", (0.05, 0.8, 0.4), rough=0.0, transmission=1.0, ior=1.58, coat=1.0, emit=(0.02, 0.75, 0.33), emit_k=2.0)
-    gem = obj("gem", gme, gem_m, scale=(0.17, 0.17, 0.17))
+    gem_m = mat("emerald", (0.02, 0.6, 0.28), rough=0.0, transmission=0.6, ior=1.58, coat=1.0, emit=(0.0, 0.85, 0.32), emit_k=3.0)
+    gem = obj("gem", gme, gem_m, scale=(0.15, 0.15, 0.15))
     c = gem.constraints.new("COPY_LOCATION")
-    c.target, c.subtarget, c.use_offset = arm, "mixamorig:RightHand", True
+    c.target, c.subtarget, c.use_offset = arm, hand_bone, True
     for f in range(1, FRAMES + 1, 4):
-        gem.location = (0, -0.05, 0.27 + 0.04 * math.sin(f / FRAMES * math.tau * 2))
+        gem.location = (0, -0.16, 0.2 + 0.035 * math.sin(f / FRAMES * math.tau * 2))
         gem.rotation_euler = (math.radians(90) + 0.3 * math.sin(f / 20), 0, f / FRAMES * math.tau * 1.5)
         gem.keyframe_insert("location", frame=f)
         gem.keyframe_insert("rotation_euler", frame=f)
-    glow = light("POINT", "gem_glow", (0, 0, 0), EM["neon"], 60, size=0.05)
+    glow = light("POINT", "gem_glow", (0, 0, 0), EM["neon"], 6, size=0.05)
     gc = glow.constraints.new("COPY_LOCATION")
     gc.target = gem
 
     # ---- cars
     g63, gmeshes, gsize = import_model(P("g63", "source", "car.fbx"))
-    paint = mat("g63_paint", (0.004, 0.005, 0.005), metal=0.6, rough=0.18, coat=1.0)
+    paint = mat("g63_paint", (0.006, 0.007, 0.007), metal=0.4, rough=0.38, coat=0.25)
     chrome = mat("chrome", (0.9, 0.9, 0.9), metal=1.0, rough=0.06)
     tire = mat("tire", (0.012, 0.012, 0.012), rough=0.75)
-    lamp = emission("headlamp", (0.9, 0.97, 1.0), 25)
+    lamp = emission("headlamp", (0.9, 0.97, 1.0), 5)
     tail = emission("taillamp", (1.0, 0.05, 0.04), 12)
     tint = mat("tint", (0.02, 0.025, 0.025), rough=0.02, coat=1.0)
     for o in gmeshes:
@@ -343,10 +448,10 @@ def build():
                 tail if ("tail" in n or "brake" in n or "rear_l" in n) else
                 chrome if ("chrom" in n or "silver" in n or "grill" in n or "wheel" in n or "rim" in n) else
                 paint)
-    place(g63, gsize, 1.95, (-3.3, -3.5, 0), math.radians(74))
-    light("SPOT", "g63_head", (-1.9, -4.7, 0.9), (0.9, 0.97, 1.0), 1800, size=0.15, target=(4, -6.5, 0), spot=50)
+    place(g63, gsize, 1.95, (-2.75, -3.0, 0), math.radians(70))
+    light("SPOT", "g63_head", (-1.9, -4.7, 0.9), (0.9, 0.97, 1.0), 500, size=0.15, target=(4, -6.5, 0), spot=50)
     porsche, pmeshes, psize2 = import_model(P("porsche", "porsche.usdz"))
-    em_paint = mat("911_paint", (0.01, 0.32, 0.17), metal=0.85, rough=0.22, coat=1.0)
+    em_paint = mat("911_paint", (0.01, 0.3, 0.16), metal=0.6, rough=0.34, coat=0.3)
     for o in pmeshes:
         for i, m in enumerate(o.data.materials):
             if m and m.name == "body_main":
@@ -355,8 +460,8 @@ def build():
                 o.data.materials[i] = lamp
             if m and m.name == "red_light_main":
                 o.data.materials[i] = tail
-    place(porsche, psize2, 1.31, (3.1, -3.9, 0), math.radians(-150))
-    light("SPOT", "911_head", (2.3, -6.2, 0.7), (0.9, 0.97, 1.0), 1400, size=0.12, target=(-1, -11, 0), spot=55)
+    place(porsche, psize2, 1.31, (2.9, -3.6, 0), math.radians(-128))
+    light("SPOT", "911_head", (2.3, -6.2, 0.7), (0.9, 0.97, 1.0), 400, size=0.12, target=(-1, -11, 0), spot=55)
 
     # ---- traffic: light streaks passing on the far lane (motion blur turns them into trails)
     for i in range(10):
@@ -402,7 +507,7 @@ def build():
     light("AREA", "sign_glow", (0, -1.0, 4.0), EM["neon"], 380, size=6.0, rot=(math.radians(90), 0, 0))
     neon_light = light("AREA", "sign_spill", (0, -0.6, 4.6), EM["neon"], 520, size=7.0, rot=(math.radians(150), 0, 0))
     light("AREA", "rim_cool", (-6, -6, 6), (0.55, 0.75, 1.0), 900, size=5, target=(0, 0, 1.5))
-    light("AREA", "agent_key", (1.2, -1.5, 2.6), (0.8, 1.0, 0.92), 140, size=1.0, target=(0, 0.85, 1.4))
+    light("AREA", "agent_key", (1.2, -1.5, 2.6), (0.8, 1.0, 0.92), 50, size=1.0, target=(0, 0.85, 1.4))
     world = bpy.data.worlds.new("night")
     sc.world = world
     world.use_nodes = True
@@ -425,7 +530,7 @@ def build():
 
     # ---- camera: low, slow push towards the store
     cam_d = bpy.data.cameras.new("cam")
-    cam_d.lens = 27
+    cam_d.lens = 52
     cam_d.dof.use_dof = True
     cam_d.dof.aperture_fstop = 2.8
     cam = bpy.data.objects.new("cam", cam_d)
@@ -433,13 +538,13 @@ def build():
     sc.camera = cam
     focus = bpy.data.objects.new("focus", None)
     sc.collection.objects.link(focus)
-    focus.location = (0, 0.6, 1.4)
+    focus.location = (0, 0.75, 1.45)
     cam_d.dof.focus_object = focus
     look = bpy.data.objects.new("look", None)
     sc.collection.objects.link(look)
     tc = cam.constraints.new("TRACK_TO")
     tc.target, tc.track_axis, tc.up_axis = look, "TRACK_NEGATIVE_Z", "UP_Y"
-    for f, cpos, lpos in ((1, (1.0, -9.6, 1.3), (0, 0.4, 2.1)), (FRAMES, (0.45, -8.4, 1.38), (0, 0.4, 2.05))):
+    for f, cpos, lpos in ((1, (1.6, -9.6, 1.45), (0.0, 0.8, 1.95)), (FRAMES, (1.0, -8.4, 1.5), (0.0, 0.8, 1.9))):
         cam.location, look.location = cpos, lpos
         cam.keyframe_insert("location", frame=f)
         look.keyframe_insert("location", frame=f)

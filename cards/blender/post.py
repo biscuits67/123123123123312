@@ -22,7 +22,7 @@ FPS = 24
 def bloom(img):
     a = np.asarray(img, dtype=np.float32) / 255
     lum = a @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
-    mask = np.clip((lum - 0.62) / 0.38, 0, 1)[..., None]
+    mask = np.clip((lum - 0.72) / 0.28, 0, 1)[..., None]
     hi = Image.fromarray((a * mask * 255).astype(np.uint8))
     glow = np.zeros_like(a)
     for radius, weight in ((6, 0.55), (22, 0.45), (60, 0.35)):
