@@ -639,26 +639,25 @@ def owner_crowned_gem():
 
 
 def owner_minimal():
-    """D: clean monoline crown in polished gold with one emerald — calm and modern."""
+    """D: clean monoline crown polished from emerald, with one emerald in the centre."""
     c1, c2, c3, c4, c5 = THEMES["emerald"]
-    g1, g2, g3, g4, g5 = THEMES["gold"]
     line = "M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z"
     base = "M20,78 H80"
-    stops = [(0, g1), (0.45, g2), (1, g3)]
+    stops = [(0, "#a8ffd9"), (0.35, c1), (0.7, c2), (1, c3)]
     it = []
     gem = star_pts(50, 54, 7.5, 7.5 * 0.92, n=4)
-    it.append(group([ellipse(47.6, 51.5, 3), fill("#ffffff", 85)], "gem-hl"))
+    it.append(group([ellipse(47.6, 51.5, 3), fill("#ffffff", 90)], "gem-hl"))
     it.append(group([poly(gem), _glint(110, 150, (40, 44), (60, 64), 8, 0.9)], "gem-glint"))
-    it.append(group([poly(gem), gfill([(0, c1), (0.5, c2), (1, c4)], (44, 48), (56, 60))], "gem"))
-    for n, (x, y) in enumerate(((15, 32), (50, 22), (85, 32))):
-        it.append(group([ellipse(x, y, 7), gfill([(0, g1), (1, g3)], (x - 3, y - 3), (x + 3, y + 3))], f"dot{n}", p=(0, -5.5)))
+    it.append(group([poly(gem), stroke(c5, 1.2, 60)], "gem-edge"))
+    it.append(group([poly(gem), gfill([(0, c1), (0.4, c2), (1, c4)], (44, 48), (56, 60))], "gem"))
     for d in (line, base):
         it.append(group(path(d) + [_gstroke([(0, "#ffffff"), (1, "#ffffff")],
                                             anim([(0, [-30, -30]), (30, [-30, -30], (0.5, 0, 0.5, 1)), (75, [70, 70])]),
                                             anim([(0, [0, 0]), (30, [0, 0], (0.5, 0, 0.5, 1)), (75, [100, 100])]), 7,
                                             alpha=[(0, 0), (0.4, 0), (0.5, 0.85), (0.6, 0), (1, 0)])], "glint"))
         it.append(group(path(d) + [_gstroke(stops, (30, 20), (70, 80), 7)], "line"))
-        it.append(group(path(d) + [stroke(g5, 7)], "depth", p=(0, 2)))
+        it.append(group(path(d) + [stroke(c4, 7)], "depth", p=(0, 1.3)))
+        it.append(group(path(d) + [stroke(c5, 7)], "depth2", p=(0, 2.6)))
     return _float_layers([], it, [(78, 12, 6, 30), (12, 60, 4.5, 90), (90, 70, 4.5, 140)], scale=100)
 
 
@@ -719,7 +718,7 @@ EMOJI = {
     "globe":     ("🌐", "emerald", icon_globe, 100),
     "hourglass": ("⏳", "emerald", icon_hourglass, 60),
     "bell":      ("🔔", "emerald", icon_bell, 90),
-    "owner":     ("👑", "emerald", None, 0),     # unique: gold royal crown with emeralds, for the project owners
+    "owner":     ("👑", "emerald", None, 0),     # unique: monoline emerald crown, for the project owners
 }
 
 SPARKLES = [(86, 10, 9, 0), (10, 30, 6, 50), (92, 70, 5.5, 100), (14, 88, 5, 140)]
@@ -729,7 +728,7 @@ def build(name):
     _, theme, icon, shine = EMOJI[name]
     if icon is None:
         return {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100,
-                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": owner_layers()}
+                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": owner_minimal()}
     c = THEMES[theme]
     parts, lk = icon()
     lk = dict(lk)

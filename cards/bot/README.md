@@ -59,10 +59,10 @@ with a white icon, a light glint and sparkles. They're 3-second loops in Telegra
 Frame 0 is always the complete icon, so the emoji also reads correctly when animations are off.
 Preview: `../emoji_preview.gif`.
 
-`owner` is a one-off emoji for the project owners: a gold royal crown with pearls on the points
-and an emerald on the centre point. A large emerald-cut stone, the same one as on the cards, is set in
-the front, with two round emeralds on the band. Light glides over the gold, the big stone flashes, the
-crown floats gently on a soft emerald halo and sparkles appear around it. Preview: `../emoji_owner.gif`.
+`owner` is a one-off emoji for the project owners: a clean monoline crown polished from emerald,
+with a faceted emerald in the centre. Light runs along the lines, the stone flashes, the crown floats
+on a soft emerald glow and sparkles appear around it. Preview: `../emoji_owner.gif`.
+The other crown designs we tried can be generated with `python3 ../tools/emoji_build.py --owner-variants`.
 
 | name | emoji | | name | emoji | | name | emoji |
 |---|---|---|---|---|---|---|---|
