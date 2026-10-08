@@ -47,7 +47,7 @@ def grade(a, i):
     a = a / (1 + a * 0.12)
     a = np.clip((a - 0.025) * 1.12, 0, None) ** 1.08
     shadow = np.clip(1 - a.mean(-1, keepdims=True) * 3, 0, 1)
-    a = a + shadow * np.array([-0.004, 0.012, 0.006], dtype=np.float32)
+    a = a + shadow * np.array([-0.002, 0.004, 0.003], dtype=np.float32)
     # vignette
     a *= (1 - np.clip((np.sqrt(r2) - 0.32) / 0.5, 0, 1) ** 1.6 * 0.7)[..., None]
     # grain (fresh every frame)

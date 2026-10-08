@@ -75,12 +75,12 @@ def textures():
         d.rectangle([248, y, 264, y + 140], fill=(200, 200, 190))
     r.filter(ImageFilter.GaussianBlur(0.7)).save(os.path.join(TEX, "road.png"))
     # dark tiles for the store interior
-    t = Image.new("RGB", (512, 512), (6, 30, 22))
+    t = Image.new("RGB", (512, 512), (14, 15, 16))
     d = ImageDraw.Draw(t)
     for y in range(0, 512, 64):
         for x in range(0, 512, 128):
             g = rnd.randint(-6, 6)
-            d.rectangle([x + 3, y + 3, x + 125, y + 61], fill=(8 + g, 44 + g, 32 + g))
+            d.rectangle([x + 3, y + 3, x + 125, y + 61], fill=(26 + g, 27 + g, 29 + g))
     t.save(os.path.join(TEX, "tiles.png"))
 
 
@@ -192,14 +192,15 @@ def rigged_agent(loc, rz):
     from mathutils import Matrix, Quaternion
     root, meshes, size = import_model(P("hazmat-suit", "source", "hazmat suit model unrigged.fbx"))
     body = meshes[0]
-    white = mat("suit_white", (0.5, 0.52, 0.5), rough=0.6, coat=0.05)
+    white = mat("suit_black", (0.012, 0.013, 0.014), rough=0.45, coat=0.2)
+    glove_w = mat("glove_white", (0.85, 0.87, 0.86), rough=0.4, coat=0.3)
     white.node_tree.nodes["Principled BSDF"].inputs["Sheen Weight"].default_value = 0.4
     visor = mat("visor", (0.01, 0.05, 0.03), metal=0.3, rough=0.03, coat=1.0, emit=EM["neon"], emit_k=2.5)
     rubber = mat("rubber", (0.01, 0.01, 0.01), rough=0.3, coat=0.8)
     trim = mat("trim", (0.05, 0.06, 0.06), metal=1.0, rough=0.3)
     for i, m in enumerate(body.data.materials):
         n = (m.name if m else "").lower()
-        body.data.materials[i] = visor if n == "faceplate" else trim if "trim" in n else rubber if ("boot" in n or "glove" in n) else white
+        body.data.materials[i] = visor if n == "faceplate" else trim if "trim" in n else glove_w if "glove" in n else rubber if "boot" in n else white
     # bake the import transform into the mesh so it sits at the origin, facing +x
     bpy.context.view_layer.update()
     mw = body.matrix_world.copy()
@@ -307,7 +308,7 @@ def build():
     sc.frame_start, sc.frame_end = 1, FRAMES
 
     # materials
-    concrete = mat("facade", (0.03, 0.032, 0.032), rough=0.7)
+    concrete = mat("facade", (0.035, 0.035, 0.036), rough=0.6)
     dark_metal = mat("dark_metal", (0.02, 0.022, 0.022), metal=1.0, rough=0.35)
     steel = mat("steel", (0.3, 0.33, 0.32), metal=1.0, rough=0.25)
     marble = mat("counter", (0.01, 0.012, 0.012), rough=0.08, coat=1.0)
@@ -338,7 +339,7 @@ def build():
     obj("under", box_mesh("un", FX1 - FX0, 0.5, Z0), dark_metal, loc=(0, 0.25, Z0 / 2))
     obj("lintel", box_mesh("li", FX1 - FX0, 0.5, 0.35), concrete, loc=(0, 0.25, Z1 + 0.175))
     # sign band + neon
-    band = obj("signband", box_mesh("sb", 7.6, 0.4, 1.25), mat("signbox", (0.005, 0.006, 0.006), metal=0.7, rough=0.25, coat=1), loc=(0, 0.05, 3.95))
+    band = obj("signband", box_mesh("sb", 7.6, 0.4, 1.25), mat("signbox", (0.006, 0.006, 0.007), metal=0.5, rough=0.5, coat=0.2), loc=(0, 0.05, 3.95))
     bevel(band, 0.03)
     neon_main = neon_text("EMERALD", 0.86, (0, -0.17, 4.14), neon, tube=0.026)
     exch = solid_text("EXCHANGE", 0.34, (0, -0.17, 3.52), [white_box], bevel=0.0)
@@ -364,7 +365,7 @@ def build():
     obj("int_floor", box_mesh("if", 6.0, 3.4, 0.1), marble, loc=(0, 1.7, 0.0))
     obj("int_ceil", box_mesh("ic", 6.0, 3.4, 0.1), concrete, loc=(0, 1.7, 3.35))
     for x in (-1.6, 0, 1.6):
-        obj("ceil_panel", box_mesh("cp", 1.1, 0.5, 0.02), emission("panel", (0.75, 1.0, 0.88), 10.0), loc=(x, 1.8, 3.28))
+        obj("ceil_panel", box_mesh("cp", 1.1, 0.5, 0.02), emission("panel", (1.0, 0.92, 0.82), 9.0), loc=(x, 1.8, 3.28))
     # shelves with cash on the back wall
     for z in (1.45, 2.15):
         obj("shelf", box_mesh("sh", 5.4, 0.45, 0.04), dark_metal, loc=(0, 3.05, z))
@@ -428,8 +429,8 @@ def build():
     gme = bpy.data.meshes.new("gem")
     bm.to_mesh(gme)
     bm.free()
-    gem_m = mat("emerald", (0.02, 0.6, 0.28), rough=0.0, transmission=0.6, ior=1.58, coat=1.0, emit=(0.0, 0.85, 0.32), emit_k=3.0)
-    gem = obj("gem", gme, gem_m, scale=(0.15, 0.15, 0.15))
+    gem_m = mat("emerald", (0.01, 0.42, 0.17), rough=0.0, transmission=0.55, ior=1.58, coat=1.0, emit=(0.0, 0.5, 0.18), emit_k=0.35)
+    gem = obj("gem", gme, gem_m, scale=(0.2, 0.2, 0.2))
     c = gem.constraints.new("COPY_LOCATION")
     c.target, c.subtarget, c.use_offset = arm, hand_bone, True
     for f in range(1, FRAMES + 1, 4):
@@ -437,9 +438,37 @@ def build():
         gem.rotation_euler = (math.radians(90) + 0.3 * math.sin(f / 20), 0, f / FRAMES * math.tau * 1.5)
         gem.keyframe_insert("location", frame=f)
         gem.keyframe_insert("rotation_euler", frame=f)
-    glow = light("POINT", "gem_glow", (0, 0, 0), EM["neon"], 6, size=0.05)
-    gc = glow.constraints.new("COPY_LOCATION")
-    gc.target = gem
+    glow = light("POINT", "gem_glow", (0, 0, 0), EM["neon"], 4, size=0.05)
+    # crisp highlights on the facets + a levitation ring and sparks under the stone
+    light("SPOT", "gem_spark", (1.0, -1.6, 2.4), (1, 1, 1), 14, size=0.05, target=(0.3, 0.6, 1.45), spot=6)
+    ring_me = bpy.data.meshes.new("lev_ring")
+    bm = bmesh.new()
+    bmesh.ops.create_circle(bm, segments=64, radius=0.11)
+    bm.to_mesh(ring_me)
+    bm.free()
+    ring = obj("lev_ring", ring_me, emission("lev_ring", EM["neon"], 9.0))
+    ring.modifiers.new("skin", "SKIN")
+    for v in ring.data.skin_vertices[0].data:
+        v.radius = (0.006, 0.006)
+    rc = ring.constraints.new("COPY_LOCATION")
+    rc.target, rc.subtarget, rc.use_offset = arm, hand_bone, True
+    for f in range(1, FRAMES + 1, 4):
+        k = 1 + 0.25 * math.sin(f / FRAMES * math.tau * 3)
+        ring.location, ring.scale = (0, -0.16, 0.07), (k, k, k)
+        ring.keyframe_insert("location", frame=f)
+        ring.keyframe_insert("scale", frame=f)
+    for n in range(10):                                 # sparks orbiting the stone
+        sp = obj("spark", box_mesh("sp", 0.012, 0.012, 0.012), emission("spark", (0.7, 1.0, 0.85), 30))
+        spc = sp.constraints.new("COPY_LOCATION")
+        spc.target, spc.subtarget, spc.use_offset = arm, hand_bone, True
+        r0, ph = 0.13 + 0.05 * (n % 3), n / 10
+        for f in range(1, FRAMES + 1, 3):
+            a = math.tau * (ph + f / FRAMES * (1.5 + 0.3 * (n % 2)))
+            sp.location = (math.cos(a) * r0, -0.16 + math.sin(a) * r0, 0.12 + 0.12 * ((f / FRAMES * 2 + ph) % 1))
+            sp.keyframe_insert("location", frame=f)
+    gc = glow.constraints.new("COPY_LOCATION")            # under the stone: lights the palm, not the gem
+    gc.target, gc.subtarget, gc.use_offset = arm, hand_bone, True
+    glow.location = (0, -0.16, 0.04)
 
     # ---- cars
     g63, gmeshes, gsize = import_model(P("g63", "source", "car.fbx"))
@@ -474,27 +503,6 @@ def build():
     place(porsche, psize2, 1.31, (2.9, -3.6, 0), math.radians(-128))
     light("SPOT", "911_head", (2.3, -6.2, 0.7), (0.9, 0.97, 1.0), 400, size=0.12, target=(-1, -11, 0), spot=55)
 
-    # ---- traffic: thin light trails passing in front of the store (motion blur stretches them)
-    for i in range(12):
-        direction = 1 if i % 2 else -1
-        y = -5.2 if direction > 0 else -5.9
-        col = (1.0, 0.06, 0.04) if direction > 0 else (1.0, 0.9, 0.75)
-        mat_l = emission(f"traffic{i}", col, 18)
-        bm = bmesh.new()
-        bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.018, radius2=0.018, depth=0.5)
-        me = bpy.data.meshes.new("trail")
-        bm.to_mesh(me)
-        bm.free()
-        o = obj("traffic", me, mat_l, rot=(0, math.radians(90), 0))
-        ph = i / 12
-        z = 0.62 + 0.08 * (i % 3)
-        for f in (1, FRAMES):
-            o.location = (direction * (-30 + 60 * ((f - 1) / FRAMES * 1.6 + ph)), y, z)
-            o.keyframe_insert("location", frame=f)
-        for fc in getattr(o.animation_data.action, "fcurves", []):
-            for k in fc.keyframe_points:
-                k.interpolation = "LINEAR"
-
     # ---- wind: banknotes blown off the counter and down the street
     bill_me = box_mesh("bill1", 0.156, 0.066, 0.0015)
     bill_me.materials.append(bill)
@@ -517,9 +525,8 @@ def build():
             o.keyframe_insert("rotation_euler", frame=f)
 
     # ---- lights
-    light("AREA", "store_fill", (0, 1.2, 3.1), (0.6, 1.0, 0.8), 650, size=4.0, rot=(0, 0, 0))
-    light("AREA", "sign_glow", (0, -1.0, 4.0), EM["neon"], 380, size=6.0, rot=(math.radians(90), 0, 0))
-    neon_light = light("AREA", "sign_spill", (0, -0.6, 4.6), EM["neon"], 520, size=7.0, rot=(math.radians(150), 0, 0))
+    light("AREA", "store_fill", (0, 1.2, 3.1), (1.0, 0.9, 0.8), 600, size=4.0, rot=(0, 0, 0))
+    neon_light = light("AREA", "sign_spill", (0, -0.6, 4.6), EM["neon"], 200, size=7.0, rot=(math.radians(150), 0, 0))
     light("AREA", "rim_cool", (-6, -6, 6), (0.55, 0.75, 1.0), 900, size=5, target=(0, 0, 1.5))
     light("AREA", "agent_key", (1.2, -1.5, 2.6), (0.8, 1.0, 0.92), 50, size=1.0, target=(0, 0.85, 1.4))
     world = bpy.data.worlds.new("night")
@@ -540,11 +547,11 @@ def build():
     # neon EMERALD: burning, then sputtering like a faulty transformer
     em_sock = neon.node_tree.nodes["Emission"].inputs["Strength"]
     flicker(em_sock, [(18, 20), (22, 23), (24, 27), (61, 62), (64, 70), (72, 73), (98, 99), (101, 104)], 22.0, 0.4,
-            neon_light, 520, 20)
+            neon_light, 200, 10)
 
     # ---- camera: low, slow push towards the store
     cam_d = bpy.data.cameras.new("cam")
-    cam_d.lens = 40
+    cam_d.lens = 48
     cam_d.dof.use_dof = True
     cam_d.dof.aperture_fstop = 2.8
     cam = bpy.data.objects.new("cam", cam_d)
