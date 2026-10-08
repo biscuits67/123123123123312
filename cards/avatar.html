@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Emerald avatar</title>
+<!-- Bot avatar in the card style. Render: node tools/render_avatar.js -> avatar.png (1280x1280) -->
+<style>
+  :root{
+    --bg0:#020c08; --bg1:#05221a;
+    --c1:#6ff2bd; --c2:#19c48a; --c3:#0b8a5e; --c4:#05523a; --c5:#032c20;
+    --text:#eafff6; --gold:#d8c48a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:640px;height:640px;overflow:hidden;background:var(--bg0)}
+  body{font-family:"Inter Display","Inter",sans-serif;-webkit-font-smoothing:antialiased}
+  .av{position:relative;width:100%;height:100%;overflow:hidden;
+    background:
+      radial-gradient(420px 420px at 50% 40%, color-mix(in oklab,var(--c3) 45%,transparent), transparent 70%),
+      radial-gradient(500px 400px at 0% 0%, #0a3a2a 0%, transparent 60%),
+      radial-gradient(500px 400px at 100% 100%, #06281d 0%, transparent 70%),
+      linear-gradient(135deg,var(--bg1),var(--bg0) 75%)}
+  .rays{position:absolute;inset:0;opacity:.6;
+    background:conic-gradient(from 0deg at 50% 40%, transparent 0 10deg, rgba(255,255,255,.04) 10deg 14deg, transparent 14deg 40deg,
+      rgba(255,255,255,.03) 40deg 43deg, transparent 43deg 80deg, rgba(255,255,255,.035) 80deg 84deg, transparent 84deg 130deg,
+      rgba(255,255,255,.03) 130deg 133deg, transparent 133deg 190deg, rgba(255,255,255,.04) 190deg 194deg, transparent 194deg 250deg,
+      rgba(255,255,255,.03) 250deg 253deg, transparent 253deg 300deg, rgba(255,255,255,.035) 300deg 304deg, transparent 304deg 360deg);
+    mask-image:radial-gradient(330px 330px at 50% 40%,#000,transparent 80%)}
+  .grid{position:absolute;inset:0;opacity:.05;
+    background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);
+    background-size:32px 32px;mask-image:radial-gradient(circle at 50% 45%,#000 20%,transparent 70%)}
+  .gemwrap{position:absolute;left:50%;top:176px;width:220px;height:253px;transform:translateX(-50%)}
+  .glow{position:absolute;inset:-70px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--c2) 60%,transparent),transparent);filter:blur(26px);opacity:.8}
+  .shadow{position:absolute;left:30px;right:30px;bottom:-26px;height:30px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--c2) 55%,transparent),transparent);filter:blur(7px)}
+  .gemwrap svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .crown{position:absolute;left:50%;top:78px;width:170px;transform:translateX(-50%) rotate(-6deg);overflow:visible;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+  .name{position:absolute;left:0;right:0;top:470px;text-align:center;font-weight:700;font-size:62px;letter-spacing:.26em;
+    padding-left:.26em;
+    background:linear-gradient(180deg,#f2fff9 10%,var(--c1) 70%,var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 4px 14px rgba(25,196,138,.35))}
+  .line{position:absolute;left:50%;top:552px;width:120px;height:2px;transform:translateX(-50%);
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.8}
+  .sparkle{position:absolute;width:26px;height:26px}
+  .sparkle::before,.sparkle::after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:2px;transform:translate(-50%,-50%)}
+  .sparkle::before{width:2px;height:100%;box-shadow:0 0 10px #fff}
+  .sparkle::after{width:100%;height:2px;box-shadow:0 0 10px #fff}
+</style>
+</head>
+<body>
+<div class="av">
+  <div class="grid"></div>
+  <div class="rays"></div>
+  <div class="gemwrap">
+    <div class="glow"></div>
+    <div class="shadow"></div>
+    <svg viewBox="0 0 400 460">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--c1)"/><stop offset=".45" stop-color="var(--c2)"/><stop offset="1" stop-color="var(--c4)"/>
+        </linearGradient>
+        <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--c2)"/><stop offset="1" stop-color="var(--c5)"/>
+        </linearGradient>
+        <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--c3)"/><stop offset="1" stop-color="var(--c5)"/>
+        </linearGradient>
+        <linearGradient id="table" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--c2)"/><stop offset=".55" stop-color="var(--c3)"/><stop offset="1" stop-color="var(--c4)"/>
+        </linearGradient>
+        <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+      </defs>
+
+      <!-- outline: octagon -->
+      <!-- outer: (90,10)(310,10)(390,90)(390,370)(310,450)(90,450)(10,370)(10,90) -->
+      <!-- mid:   (110,50)(290,50)(350,110)(350,350)(290,410)(110,410)(50,350)(50,110) -->
+      <!-- table: (135,95)(265,95)(305,135)(305,325)(265,365)(135,365)(95,325)(95,135) -->
+      <!-- outer ring facets -->
+      <polygon points="90,10 310,10 290,50 110,50" fill="var(--c1)"/>
+      <polygon points="310,10 390,90 350,110 290,50" fill="url(#g1)"/>
+      <polygon points="390,90 390,370 350,350 350,110" fill="url(#g2)"/>
+      <polygon points="390,370 310,450 290,410 350,350" fill="var(--c4)"/>
+      <polygon points="310,450 90,450 110,410 290,410" fill="var(--c5)"/>
+      <polygon points="90,450 10,370 50,350 110,410" fill="var(--c4)"/>
+      <polygon points="10,370 10,90 50,110 50,350" fill="url(#g3)"/>
+      <polygon points="10,90 90,10 110,50 50,110" fill="var(--c2)"/>
+      <!-- mid ring facets -->
+      <polygon points="110,50 290,50 265,95 135,95" fill="var(--c2)"/>
+      <polygon points="290,50 350,110 305,135 265,95" fill="var(--c3)"/>
+      <polygon points="350,110 350,350 305,325 305,135" fill="var(--c3)"/>
+      <polygon points="350,350 290,410 265,365 305,325" fill="var(--c5)"/>
+      <polygon points="290,410 110,410 135,365 265,365" fill="var(--c4)"/>
+      <polygon points="110,410 50,350 95,325 135,365" fill="var(--c5)"/>
+      <polygon points="50,350 50,110 95,135 95,325" fill="var(--c4)"/>
+      <polygon points="50,110 110,50 135,95 95,135" fill="var(--c1)" opacity=".85"/>
+      <!-- table -->
+      <polygon points="135,95 265,95 305,135 305,325 265,365 135,365 95,325 95,135" fill="url(#table)"/>
+      <!-- inner step lines on table -->
+      <polygon points="150,120 250,120 280,150 280,310 250,340 150,340 120,310 120,150" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2"/>
+      <!-- edges -->
+      <g fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.5">
+        <polygon points="90,10 310,10 390,90 390,370 310,450 90,450 10,370 10,90"/>
+        <polygon points="110,50 290,50 350,110 350,350 290,410 110,410 50,350 50,110"/>
+        <polygon points="135,95 265,95 305,135 305,325 265,365 135,365 95,325 95,135"/>
+        <path d="M90,10L110,50L135,95 M310,10L290,50L265,95 M390,90L350,110L305,135 M390,370L350,350L305,325 M310,450L290,410L265,365 M90,450L110,410L135,365 M10,370L50,350L95,325 M10,90L50,110L95,135"/>
+      </g>
+      <!-- highlight -->
+      <polygon points="90,10 310,10 290,50 110,50 50,110 10,90" fill="url(#shine)"/>
+      <polygon points="135,95 230,95 120,250 95,250 95,135" fill="#fff" opacity=".10"/>
+    </svg>
+  </div>
+  <!-- the emerald crown from the owner emoji -->
+  <svg class="crown" viewBox="10 16 80 60">
+    <defs>
+      <linearGradient id="cr" x1="0.3" y1="0" x2="0.7" y2="1">
+        <stop offset="0" stop-color="#e2fff3"/><stop offset=".4" stop-color="#a8ffd9"/><stop offset=".8" stop-color="var(--c1)"/><stop offset="1" stop-color="var(--c2)"/>
+      </linearGradient>
+      <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--c1)"/><stop offset=".4" stop-color="var(--c2)"/><stop offset="1" stop-color="var(--c4)"/>
+      </linearGradient>
+    </defs>
+    <g fill="none" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z" stroke="var(--c5)" transform="translate(0,3)"/>
+      <path d="M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z" stroke="var(--c4)" transform="translate(0,1.5)"/>
+      <path d="M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z" stroke="url(#cr)"/>
+    </g>
+    <polygon points="50,46 55.5,48.3 57.8,53.8 55.5,59.3 50,61.6 44.5,59.3 42.2,53.8 44.5,48.3" fill="url(#cg)" stroke="var(--c5)" stroke-opacity=".6"/>
+    <circle cx="47.6" cy="51.4" r="1.6" fill="#fff" opacity=".9"/>
+  </svg>
+  <div class="sparkle" style="left:436px;top:88px"></div>
+  <div class="sparkle" style="left:168px;top:228px;transform:scale(.6)"></div>
+  <div class="sparkle" style="left:452px;top:372px;transform:scale(.55)"></div>
+  <div class="name">EMERALD</div>
+  <div class="line"></div>
+</div>
+</body>
+</html>

@@ -689,6 +689,48 @@ def owner_crystals():
     return _float_layers([], it, [(50, 4, 6, 40), (84, 30, 5, 80), (14, 34, 5, 120), (88, 70, 4, 150)])
 
 
+def royal_gem():
+    """The brand emerald wearing the emerald crown: the crown hops and lands on the stone,
+    light runs over both and sparkles burst around."""
+    c1, c2, c3, c4, c5 = THEMES["emerald"]
+    crown_d = "M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z"
+    stops = [(0, "#e2fff3"), (0.4, "#a8ffd9"), (0.8, c1), (1, c2)]
+    crown = []
+    gem = star_pts(50, 54, 8, 8 * 0.92, n=4)
+    crown.append(group([ellipse(47.4, 51.4, 3.4), fill("#ffffff", 90)], "gem-hl"))
+    crown.append(group([poly(gem), gfill([(0, c1), (0.4, c2), (1, c4)], (44, 48), (56, 60))], "gem"))
+    crown.append(group(path(crown_d) + [_gstroke([(0, "#ffffff"), (1, "#ffffff")],
+                                                 anim([(0, [-30, -30]), (112, [-30, -30], (0.5, 0, 0.5, 1)), (150, [70, 70])]),
+                                                 anim([(0, [0, 0]), (112, [0, 0], (0.5, 0, 0.5, 1)), (150, [100, 100])]), 10,
+                                                 alpha=[(0, 0), (0.4, 0), (0.5, 0.9), (0.6, 0), (1, 0)])], "glint"))
+    crown.append(group(path(crown_d) + [_gstroke(stops, (30, 20), (70, 70), 10)], "line"))
+    crown.append(group(path(crown_d) + [stroke(c4, 10)], "depth", p=(0, 2)))
+    crown.append(group(path(crown_d) + [stroke(c5, 10)], "depth2", p=(0, 4)))
+
+    hop = anim([(0, [50, 39.5]), (14, [50, 39.5], (0.3, 0, 0.6, 1)), (32, [50, 30], (0.5, 0, 0.7, 1)), (48, [50, 39.5]),
+                (OP, [50, 39.5])])
+    tilt = anim([(0, 0), (14, 0, (0.3, 0, 0.6, 1)), (32, -9, (0.5, 0, 0.6, 1)), (48, 4, EASE), (60, -2, EASE), (72, 0), (OP, 0)])
+    squash = anim([(0, [100, 100]), (44, [100, 100], (0.3, 0, 0.5, 1)), (50, [112, 88], (0.4, 0, 0.3, 1.5)), (64, [100, 100]),
+                   (OP, [100, 100])])
+    stone = group(gem_shapes(THEMES["emerald"], 70), "stone", p=(50, 66), a=(50, 50), s=(58, 58))
+    breath = anim([(0, [100, 100], EASE), (46, [100, 100], (0.3, 0, 0.4, 1)), (52, [96, 103], (0.4, 0, 0.3, 1.4)), (66, [100, 100]),
+                   (120, [102, 102], EASE), (OP, [100, 100])])
+
+    layers = [sparkle(10 + n, x, y, sz, t0) for n, (x, y, sz, t0) in
+              enumerate([(80, 30, 8, 46), (20, 34, 6, 50), (86, 74, 5, 95), (14, 82, 5, 140), (50, 6, 6, 120)])]
+    layers.append(layer("crown", [group(crown, "crown", p=(50, 66), a=(50, 66), s=(54, 54))], 2,
+                        p=hop, a=(50, 66), s=squash, r=tilt, parent=3))
+    layers.append(layer("stone", [stone], 3, p=(50, 66), a=(50, 66), s=breath))
+    layers.append(layer("shadow", [group([ellipse(50, 96, 54, 6), gfill([(0, c3), (1, c5)], (50, 96), (77, 96),
+                                                                       alpha=[(0, 0.6), (1, 0)], radial=True)], "sh")], 5))
+    layers.append(layer("halo", [group([ellipse(0, 0, 96), gfill([(0, c1), (1, c2)], (0, 0), (48, 0),
+                                                               alpha=[(0, 0.38), (0.6, 0.1), (1, 0)], radial=True)], "h")], 6,
+                        p=(50, 58), a=(0, 0),
+                        s=anim([(0, [96, 96], EASE), (48, [96, 96], (0.3, 0, 0.4, 1)), (60, [114, 114], EASE), (110, [100, 100], EASE),
+                                (OP, [96, 96])])))
+    return layers
+
+
 OWNER_VARIANTS = {"a_royal": owner_layers, "b_emerald": owner_emerald, "c_crowned_gem": owner_crowned_gem,
                   "d_minimal": owner_minimal, "e_crystals": owner_crystals}
 
@@ -719,6 +761,7 @@ EMOJI = {
     "hourglass": ("⏳", "emerald", icon_hourglass, 60),
     "bell":      ("🔔", "emerald", icon_bell, 90),
     "owner":     ("👑", "emerald", None, 0),     # unique: monoline emerald crown, for the project owners
+    "royal":     ("💎", "emerald", None, 0),     # unique: the brand emerald wearing the emerald crown
 }
 
 SPARKLES = [(86, 10, 9, 0), (10, 30, 6, 50), (92, 70, 5.5, 100), (14, 88, 5, 140)]
@@ -728,7 +771,7 @@ def build(name):
     _, theme, icon, shine = EMOJI[name]
     if icon is None:
         return {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100,
-                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": owner_minimal()}
+                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": {"owner": owner_minimal, "royal": royal_gem}[name]()}
     c = THEMES[theme]
     parts, lk = icon()
     lk = dict(lk)

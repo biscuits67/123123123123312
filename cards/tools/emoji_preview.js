@@ -15,7 +15,7 @@ const COLS = 6, CELL = 150, ICON = 110, STEP = 2;   // 60 fps source -> 30 fps g
 (async () => {
   const names = fs.readdirSync(TGS).filter(f => f.endsWith('.tgs')).map(f => f.slice(0, -4));
   const order = ['gem', 'check', 'cross', 'stop', 'wallet', 'star', 'payout', 'bolt', 'users', 'coin', 'chart', 'like',
-    'plane', 'chat', 'link', 'book', 'info', 'medal', 'crown', 'calendar', 'globe', 'hourglass', 'bell', 'owner'];
+    'plane', 'chat', 'link', 'book', 'info', 'medal', 'crown', 'calendar', 'globe', 'hourglass', 'bell', 'owner', 'royal'];
   names.sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
   const data = Object.fromEntries(names.map(n => [n, JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(TGS, n + '.tgs'))))]));
   const rows = Math.ceil(names.length / COLS);
