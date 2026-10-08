@@ -53,11 +53,9 @@ backgrounds + `layout.json` used by the Python code.
 
 # Emerald animated emoji
 
-`emerald_emoji/` holds 24 animated custom emoji. There's no badge or frame around them: each icon is
-cut from the stone itself. It has a light-to-deep gradient body, a bevel highlight, a layered depth
-underneath and a soft glow, plus a glint that runs across it and sparkles. They're 3-second loops in
-Telegram's `.tgs` format (100×100, 60 fps, ~1.5–2 KB each). Negative actions are ruby and money/ratings
-are gold. `gem` is the brand stone itself.
+`emerald_emoji/` holds 24 animated custom emoji in the same style as the cards: an emerald-cut stone
+with a white icon, a light glint and sparkles. They're 3-second loops in Telegram's `.tgs` format
+(100×100, 60 fps, ~1.5 KB each). Negative actions use a ruby stone and ratings/money use gold.
 Frame 0 is always the complete icon, so the emoji also reads correctly when animations are off.
 Preview: `../emoji_preview.gif`.
 
