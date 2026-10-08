@@ -420,8 +420,11 @@ def build():
         W2, H2 = w / 2, h / 2
         return [(-W2 + ch, H2, z), (W2 - ch, H2, z), (W2, H2 - ch, z), (W2, -H2 + ch, z),
                 (W2 - ch, -H2, z), (-W2 + ch, -H2, z), (-W2, -H2 + ch, z), (-W2, H2 - ch, z)]
-    for s, z, cs in ((1, 0, 1), (.86, .2, .86), (.66, .33, .6), (.9, -.3, .9), (.62, -.62, .5), (.25, -.86, .15)):
-        pts += octa(1.25 * s, 1.45 * s, 0.34 * cs, z)
+    # brilliant cut (the 💎 silhouette): flat table, crown, girdle and a pointed pavilion
+    def ring(r, z, n=16, rot=0.0):
+        return [(r * math.cos(rot + k / n * math.tau), r * math.sin(rot + k / n * math.tau), z) for k in range(n)]
+    pts = ring(0.55, 0.42, 8, math.pi / 8) + ring(0.82, 0.3, 8) + ring(1.0, 0.1, 16, math.pi / 16) + ring(1.0, 0.04, 16, math.pi / 16) \
+        + ring(0.55, -0.55, 8, math.pi / 8) + [(0, 0, -1.05)]
     bm = bmesh.new()
     for p_ in pts:
         bm.verts.new(p_)
@@ -429,13 +432,13 @@ def build():
     gme = bpy.data.meshes.new("gem")
     bm.to_mesh(gme)
     bm.free()
-    gem_m = mat("emerald", (0.01, 0.42, 0.17), rough=0.0, transmission=0.55, ior=1.58, coat=1.0, emit=(0.0, 0.5, 0.18), emit_k=0.35)
-    gem = obj("gem", gme, gem_m, scale=(0.2, 0.2, 0.2))
+    gem_m = mat("emerald", (0.02, 0.55, 0.24), rough=0.0, transmission=0.6, ior=2.0, coat=1.0, emit=(0.0, 0.45, 0.17), emit_k=0.3)
+    gem = obj("gem", gme, gem_m, scale=(0.13, 0.13, 0.13))
     c = gem.constraints.new("COPY_LOCATION")
     c.target, c.subtarget, c.use_offset = arm, hand_bone, True
     for f in range(1, FRAMES + 1, 4):
-        gem.location = (0, -0.16, 0.2 + 0.035 * math.sin(f / FRAMES * math.tau * 2))
-        gem.rotation_euler = (math.radians(90) + 0.3 * math.sin(f / 20), 0, f / FRAMES * math.tau * 1.5)
+        gem.location = (0, -0.16, 0.24 + 0.035 * math.sin(f / FRAMES * math.tau * 2))
+        gem.rotation_euler = (math.radians(-18) + 0.12 * math.sin(f / 20), 0, f / FRAMES * math.tau * 1.2)
         gem.keyframe_insert("location", frame=f)
         gem.keyframe_insert("rotation_euler", frame=f)
     glow = light("POINT", "gem_glow", (0, 0, 0), EM["neon"], 4, size=0.05)
