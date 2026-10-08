@@ -50,3 +50,49 @@ Long values shrink to fit and are cut with `…` if needed; emoji in names are r
 Everything is drawn from `../card.html`. After editing it run `node ../tools/render.js`
 (needs Playwright), then `python3 ../tools/pack.py` — they re-render the preview PNGs, the static cards and the
 backgrounds + `layout.json` used by the Python code.
+
+# Emerald animated emoji
+
+`emerald_emoji/` holds 23 animated custom emoji in the same style as the cards: an emerald-cut stone
+with a white icon, a light glint and sparkles. They're 3-second loops in Telegram's `.tgs` format
+(100×100, 60 fps, ~1.5 KB each). Negative actions use a ruby stone and ratings/money use gold.
+Frame 0 is always the complete icon, so the emoji also reads correctly when animations are off.
+Preview: `../emoji_preview.gif`.
+
+| name | emoji | | name | emoji | | name | emoji |
+|---|---|---|---|---|---|---|---|
+| `gem` | 💎 | | `coin` | 💰 | | `info` | ℹ️ |
+| `check` | ✅ | | `chart` | 📊 | | `medal` | 🥇 |
+| `cross` | ❌ | | `like` | 👍 | | `crown` | 👑 |
+| `stop` | ⛔ | | `plane` | ✈️ | | `calendar` | 📅 |
+| `wallet` | 💳 | | `chat` | 💬 | | `globe` | 🌐 |
+| `star` | ⭐ | | `link` | 🔗 | | `hourglass` | ⏳ |
+| `payout` | 💸 | | `book` | 📕 | | `bell` | 🔔 |
+| `bolt` | ⚡ | | `users` | 👥 | | | |
+
+**1. Upload the pack once** (needs `aiogram` 3.x). `OWNER_ID` is your Telegram id, and you must have started the bot:
+
+```bash
+BOT_TOKEN=123:abc OWNER_ID=111222333 python3 -m emerald_emoji.upload_pack
+```
+
+This creates the `emerald_by_<bot>` pack, prints the `t.me/addemoji/...` link and saves
+`emerald_emoji/ids.json`. If you run it again later, it only adds the emoji that are new.
+
+**2. Use them in texts.** Messages must be sent with `parse_mode="HTML"`:
+
+```python
+from emerald_emoji import e
+
+await message.answer_photo(photo, caption=f"{e('payout')} Введите сумму выплаты\n{e('bolt')} Доступно: {balance} $",
+                           parse_mode="HTML")
+```
+
+Until `ids.json` exists, `e()` returns the regular emoji, so the texts already work.
+
+Whether animated emoji show up in a bot's messages depends on Telegram's current rules for bots
+using custom emoji. If they appear as regular emoji, the bot isn't allowed to send custom emoji yet.
+The pack itself always works: anyone with Premium can add it from the link.
+
+**Changing the emoji:** edit `../tools/emoji_build.py` and run `python3 ../tools/emoji_build.py`.
+`node ../tools/emoji_preview.js` (needs `npm i lottie-web` and ffmpeg) re-renders the preview.
