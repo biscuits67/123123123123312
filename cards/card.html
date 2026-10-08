@@ -58,6 +58,32 @@
   .sparkle::before,.sparkle::after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:2px;transform:translate(-50%,-50%)}
   .sparkle::before{width:2px;height:100%;box-shadow:0 0 10px #fff}
   .sparkle::after{width:100%;height:2px;box-shadow:0 0 10px #fff}
+
+  /* dynamic plates (values are drawn by the bot at runtime) */
+  .plate{margin-top:24px;display:flex;align-items:center;gap:18px;align-self:flex-start;padding:14px 24px 14px 20px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 34px rgba(0,0,0,.28)}
+  .pl-label{font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+  .pl-sep{width:1px;align-self:stretch;background:rgba(255,255,255,.12)}
+  .slot{display:block;white-space:nowrap;overflow:hidden;font-weight:700;letter-spacing:-.01em}
+  .slot.white{color:var(--text)} .slot.muted{color:var(--muted);font-weight:500}
+  .slot.grad{background:linear-gradient(100deg,var(--c1),var(--c2) 55%,var(--c1));-webkit-background-clip:text;background-clip:text;color:transparent}
+  body.has-plate h1{font-size:72px}
+  body.has-plate p{margin-top:18px;font-size:24px}
+  /* branch layout */
+  body.branch .left{width:720px}
+  body.branch h1{font-size:60px;margin-top:18px}
+  body.branch .status{display:none}
+  body.branch h1{margin-top:auto}
+  body.branch .gemwrap{right:40px;transform:translateY(-50%) scale(.78)}
+  .owner{margin-top:26px;display:flex;flex-direction:column;gap:6px;padding:16px 22px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 34px rgba(0,0,0,.28)}
+  .owner .pl-label{display:flex;align-items:center;gap:8px}
+  .tiles{margin-top:14px;display:flex;gap:12px}
+  .tile{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-radius:18px;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09)}
+  .tile .pl-label{color:#7fa595}
 </style>
 </head>
 <body>
@@ -79,8 +105,9 @@
     <div class="status"><span class="dot"></span><span id="status"></span></div>
     <h1 id="title"></h1>
     <p id="text"></p>
+    <div id="extra"></div>
 
-    <div class="foot"><i></i><span id="foot"></span></div>
+    <div class="foot" id="footrow"><i></i><span id="foot"></span></div>
   </div>
 
   <div class="gemwrap">
@@ -209,11 +236,12 @@
       title:'Заявка<br><span>принята</span>',
       text:"Добро пожаловать в Emerald. <b>Успешной работы!</b> Меню бота уже доступно.",
       foot:"Нет меню? Отправьте /start" },
-    no: { theme:"no", icon:"no",
+    no: { theme:"no", icon:"no", cls:"has-plate",
       status:"Заявка отклонена",
       title:'Заявка<br><span>отклонена</span>',
-      text:"К сожалению, сейчас мы не можем одобрить заявку. <b>Причину уточнит администрация.</b>",
-      foot:"Контакт администрации — в сообщении ниже" },
+      text:"Чтобы узнать причину, <b>свяжитесь с администрацией</b>.",
+      extra:'<div class="plate"><span class="pl-label">Администрация</span><span class="pl-sep"></span><span class="slot grad" data-slot="admin" data-size="40" data-weight="bold" data-sample="@emerald_admin" style="width:380px;height:48px;line-height:48px"></span></div>',
+      foot:"" },
     wallet: { theme:"", icon:"wallet",
       status:"Кошелёк TRX",
       title:'Выберите<br><span>кошелёк</span>',
@@ -224,11 +252,12 @@
       title:'Новый<br><span>ник</span>',
       text:"Введите ник, который будет отображаться <b>в&nbsp;отстуке</b>.",
       foot:"Отправьте ник ответным сообщением" },
-    address: { theme:"", icon:"pen",
+    address: { theme:"", icon:"pen", cls:"has-plate",
       status:"Адрес кошелька",
       title:'Новый<br><span>адрес</span>',
       text:"Введите новый адрес <b>вашего кошелька</b>.",
-      foot:"Проверьте адрес перед отправкой" },
+      extra:'<div class="plate"><span class="pl-label">Кошелёк</span><span class="pl-sep"></span><span class="slot grad" data-slot="wallet" data-size="40" data-weight="bold" data-sample="TRX" style="width:380px;height:48px;line-height:48px"></span></div>',
+      foot:"" },
     payout: { theme:"", icon:"payout",
       status:"Выплата",
       title:'Заказ<br><span>выплаты</span>',
@@ -244,26 +273,46 @@
       title:'Выплата<br><span>отклонена</span>',
       text:"Деньги вернулись <b>на ваш баланс</b>.",
       foot:"Средства снова доступны" },
-    no_wallet: { theme:"no", icon:"wallet",
+    no_wallet: { theme:"no", icon:"wallet", cls:"has-plate",
       status:"Нет кошелька",
       title:'Кошелёк<br><span>не указан</span>',
       text:"Укажите кошелёк <b>для выплаты</b>, чтобы продолжить.",
-      foot:"Без кошелька выплата недоступна" },
-    amount: { theme:"", icon:"coin",
+      extra:'<div class="plate"><span class="pl-label">Кошелёк</span><span class="pl-sep"></span><span class="slot grad" data-slot="wallet" data-size="40" data-weight="bold" data-sample="TRX" style="width:380px;height:48px;line-height:48px"></span></div>',
+      foot:"" },
+    amount: { theme:"", icon:"coin", cls:"has-plate",
       status:"Выплата",
       title:'Сумма<br><span>выплаты</span>',
-      text:"Введите сумму выплаты. <b>Доступный баланс</b>&nbsp;— в сообщении ниже.",
-      foot:"Отправьте сумму ответным сообщением" },
-    branch: { theme:"", icon:"crown",
+      text:"Введите сумму выплаты <b>ответным сообщением</b>.",
+      extra:'<div class="plate"><span class="pl-label">Доступно</span><span class="pl-sep"></span><span class="slot grad" data-slot="balance" data-size="40" data-weight="bold" data-sample="1 234.56 $" style="width:380px;height:48px;line-height:48px"></span></div>',
+      foot:"" },
+    branch: { theme:"", icon:"crown", cls:"branch",
       status:"Филиал",
       title:'Информация<br><span>о филиале</span>',
-      text:"Владелец, участники, <b>оборот и процент</b> филиала&nbsp;— в сообщении ниже.",
-      foot:"Owner · Участники · Оборот · Процент" }
+      text:"",
+      extra:'<div class="owner"><span class="pl-label">Owner</span><span class="slot white" data-slot="owner_name" data-size="30" data-weight="semibold" data-sample="Алексей Emerald" style="width:560px;height:38px;line-height:38px"></span><span class="slot muted" data-slot="owner_meta" data-size="18" data-weight="medium" data-sample="@emerald_owner · ID 123456789" style="width:560px;height:24px;line-height:24px"></span></div><div class="tiles"><div class="tile"><span class="pl-label">Участники</span><span class="slot grad" data-slot="members" data-size="38" data-weight="bold" data-sample="128" style="width:150px;height:46px;line-height:46px"></span></div><div class="tile"><span class="pl-label">Оборот</span><span class="slot grad" data-slot="turnover" data-size="38" data-weight="bold" data-sample="12 345.67 $" style="width:240px;height:46px;line-height:46px"></span></div><div class="tile"><span class="pl-label">Процент</span><span class="slot grad" data-slot="percent" data-size="38" data-weight="bold" data-sample="15%" style="width:120px;height:46px;line-height:46px"></span></div></div>',
+      foot:"" }
   };
-  const k = V[new URLSearchParams(location.search).get("v")] ? new URLSearchParams(location.search).get("v") : "ok";
-  if (V[k].theme) document.body.classList.add(V[k].theme);
-  for (const id of ["status","title","text","foot"]) document.getElementById(id).innerHTML = V[k][id];
-  document.getElementById("icon-"+V[k].icon).style.display = "";
+  const q = new URLSearchParams(location.search);
+  const k = V[q.get("v")] ? q.get("v") : "ok";
+  const base = q.get("mode") === "base";   // base = without dynamic values (for the bot)
+  const d = V[k];
+  if (d.theme) document.body.classList.add(d.theme);
+  if (d.cls) document.body.classList.add(d.cls);
+  for (const id of ["status","title","text","foot"]) document.getElementById(id).innerHTML = d[id] || "";
+  document.getElementById("extra").innerHTML = d.extra || "";
+  if (!d.text) document.getElementById("text").style.display = "none";
+  if (!d.foot) document.getElementById("footrow").style.visibility = "hidden";
+  document.getElementById("icon-"+d.icon).style.display = "";
+  for (const el of document.querySelectorAll("[data-slot]")) {
+    el.style.fontSize = el.dataset.size + "px";
+    if (!base) el.textContent = el.dataset.sample;
+  }
+  window.__slots = () => [...document.querySelectorAll("[data-slot]")].map(el => {
+    const r = el.getBoundingClientRect();
+    return { name: el.dataset.slot, x: r.x, y: r.y, w: r.width, h: r.height,
+             size: +el.dataset.size, weight: el.dataset.weight,
+             style: ["grad","white","muted"].find(c => el.classList.contains(c)) };
+  });
 </script>
 </body>
 </html>

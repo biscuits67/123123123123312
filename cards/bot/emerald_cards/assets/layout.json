@@ -1,0 +1,113 @@
+{
+  "application_rejected": {
+    "theme": "ruby",
+    "scale": 1.5,
+    "slots": {
+      "admin": {
+        "x": 292.171875,
+        "y": 467.640625,
+        "w": 380,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad"
+      }
+    }
+  },
+  "wallet_address": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "wallet": {
+        "x": 222.09375,
+        "y": 450.84375,
+        "w": 380,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad"
+      }
+    }
+  },
+  "payout_no_wallet": {
+    "theme": "ruby",
+    "scale": 1.5,
+    "slots": {
+      "wallet": {
+        "x": 222.09375,
+        "y": 467.640625,
+        "w": 380,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad"
+      }
+    }
+  },
+  "payout_amount": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "balance": {
+        "x": 234.890625,
+        "y": 450.84375,
+        "w": 380,
+        "h": 48,
+        "size": 40,
+        "weight": "bold",
+        "style": "grad"
+      }
+    }
+  },
+  "branch_info": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "owner_name": {
+        "x": 107,
+        "y": 327.296875,
+        "w": 560,
+        "h": 38,
+        "size": 30,
+        "weight": "semibold",
+        "style": "white"
+      },
+      "owner_meta": {
+        "x": 107,
+        "y": 371.296875,
+        "w": 560,
+        "h": 24,
+        "size": 18,
+        "weight": "medium",
+        "style": "muted"
+      },
+      "members": {
+        "x": 103,
+        "y": 465.296875,
+        "w": 150,
+        "h": 46,
+        "size": 38,
+        "weight": "bold",
+        "style": "grad"
+      },
+      "turnover": {
+        "x": 303,
+        "y": 465.296875,
+        "w": 240,
+        "h": 46,
+        "size": 38,
+        "weight": "bold",
+        "style": "grad"
+      },
+      "percent": {
+        "x": 593,
+        "y": 465.296875,
+        "w": 120,
+        "h": 46,
+        "size": 38,
+        "weight": "bold",
+        "style": "grad"
+      }
+    }
+  }
+}
