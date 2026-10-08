@@ -253,14 +253,24 @@ def solid(items, extra=()):
     return {"paths": items, "mods": list(extra), "kind": "fill"}
 
 
-def paint(parts, color):
+def paint(parts, style):
+    """style(part) -> fill/stroke item; a plain colour string means a flat colour."""
+    if isinstance(style, str):
+        color = style
+        style = lambda part: stroke(color, part["w"]) if part["kind"] == "stroke" else fill(color)
     out = []
     for n, part in enumerate(parts):
         sub = part.get("t")                      # optional per-part transform
-        style = stroke(color, part["w"]) if part["kind"] == "stroke" else fill(color)
-        items = part["paths"] + part["mods"] + [style]
+        items = part["paths"] + part["mods"] + [style(part)]
         out.append(group(items, f"p{n}", **(sub or {})))
     return out
+
+
+def gstroke(stops, s, e, w, alpha=None):
+    g = gfill(stops, s, e, alpha=alpha)
+    g.update(ty="gs", w=prop(w), lc=2, lj=2, ml=4)
+    del g["r"]
+    return g
 
 
 def with_t(part, **t):
@@ -331,8 +341,9 @@ def icon_bolt():
 def icon_users():
     back = with_t(outline([ellipse(60, 41, 10)] + path("M52,62 Q52,52 60,52 Q68,52 68,62"), 5),
                   p=anim([(0, [0, 0]), (20, [0, 0], (0.4, 0, 0.2, 1.4)), (40, [4, 0]), (120, [4, 0]), (145, [0, 0]), (OP, [0, 0])]))
+    back["dim"] = True
     front = outline([ellipse(44, 42, 13)] + path("M31,66 Q31,53 44,53 Q57,53 57,66"), 6)
-    return [back, front], {}
+    return [front, back], {}          # first part is drawn on top
 
 
 def icon_coin():
@@ -466,7 +477,7 @@ def icon_bell():
 # ---------------------------------------------------------------- owner: crown cut from emerald
 def owner_layers():
     """Unique emoji for the project owners: an emerald-cut crown on a gold band, turning
-    light rays behind it, a glint across the stone and twinkling gold tips."""
+    a soft halo behind it, a glint across the stone and twinkling gold tips."""
     c1, c2, c3, c4, c5 = THEMES["emerald"]
     g1, g2, g3, g4, _ = THEMES["gold"]
     A, B, C, D, E = (11, 37), (31, 54), (50, 14), (69, 54), (89, 37)
@@ -475,7 +486,8 @@ def owner_layers():
     outline = [A, B, C, D, E, H, G]
     facets = [([A, B, L, G], c2), ([B, Q, L], c3), ([B, C, Q], c1), ([C, Mb, Q], c2), ([C, R, Mb], c3),
               ([C, D, R], c2), ([D, S, R], c4), ([D, E, H, S], c3), ([G, L, Q, Mb], c4), ([Mb, R, S, H], c5)]
-    float_p = anim([(0, [50, 50], (0.45, 0, 0.55, 1)), (OP / 2, [50, 47.5], (0.45, 0, 0.55, 1)), (OP, [50, 50])])
+    float_p = anim([(0, [50, 52], (0.45, 0, 0.55, 1)), (OP / 2, [50, 49.5], (0.45, 0, 0.55, 1)), (OP, [50, 52])])
+    big = (112, 112)
     tilt = anim([(0, 0, (0.45, 0, 0.55, 1)), (OP / 4, -3, (0.45, 0, 0.55, 1)), (OP * 3 / 4, 3, (0.45, 0, 0.55, 1)), (OP, 0)])
 
     crown = []
@@ -495,16 +507,20 @@ def owner_layers():
 
     # gold band with three small emeralds
     band = []
-    for n, x in enumerate((32, 50, 68)):
+    for n, x in enumerate((30, 50, 70)):
         tw = anim([(0, [100, 100]), (30 + n * 14, [100, 100], (0.4, 0, 0.3, 1.6)), (40 + n * 14, [135, 135]),
                    (56 + n * 14, [100, 100]), (OP, [100, 100])])
-        gem = star_pts(0, 0, 5.2, 5.2 * 0.92, n=4, rot=-90)          # octagon-ish stone
-        band.append(group([poly(star_pts(0, 0, 2, 2 * 0.92, n=4, rot=-90)), fill("#ffffff", 70)], f"glint{n}",
-                          p=(x - 1.4, 79.6), s=tw))
-        band.append(group([poly(gem), gfill([(0, c1), (0.5, c2), (1, c4)], (-4, -4), (4, 4))], f"stone{n}", p=(x, 81), s=tw))
-        band.append(group([ellipse(x, 81, 12)] + [fill(g3)], f"set{n}"))
-    band.append(group([rect(50, 81, 66, 12, 4)] + [stroke(g1, 1, 45)], "band-edge"))
-    band.append(group([rect(50, 81, 66, 12, 4), gfill([(0, g1), (0.45, g2), (1, g3)], (50, 75), (50, 87))], "band"))
+        k = 1.45 if n == 1 else 0.9                                     # big centre stone, two small ones
+        gem = star_pts(0, 0, 5.2 * k, 5.2 * k * 0.92, n=4, rot=-90)  # octagon-ish stone
+        band.append(group([poly(star_pts(0, 0, 2 * k, 2 * k * 0.92, n=4, rot=-90)), fill("#ffffff", 75)], f"glint{n}",
+                          p=(x - 1.5 * k, 79.6 - 0.4 * k), s=tw))
+        band.append(group([poly(gem), gfill([(0, c1), (0.5, c2), (1, c4)], (-4 * k, -4 * k), (4 * k, 4 * k))], f"stone{n}",
+                          p=(x, 81), s=tw))
+        band.append(group([ellipse(x, 81, 12 * k)] + [gfill([(0, g1), (1, g4)], (x - 5 * k, 76), (x + 5 * k, 86))], f"set{n}"))
+    band.append(group([poly([(19, 76.5), (81, 76.5)], False)] + [stroke("#ffffff", 1.2, 70)], "band-light"))
+    band.append(group([rect(50, 81, 66, 12, 4)] + [stroke(g4, 1, 60)], "band-edge"))
+    band.append(group([rect(50, 81, 66, 12, 4), gfill([(0, g1), (0.4, g2), (0.75, g3), (1, g4)], (50, 75), (50, 87))], "band"))
+    band.append(group([rect(50, 83.5, 66, 12, 4), fill(g4)], "band-depth"))
 
     # gold balls on the tips
     tips = []
@@ -516,15 +532,6 @@ def owner_layers():
         tips.append(group([ellipse(0, 0, r), gfill([(0, g1), (1, g3)], (-r / 2, -r / 2), (r / 2, r / 2))],
                           f"tip{n}", p=(x, y - 1), s=glow))
 
-    # rays behind: 8 soft wedges, a 45° turn per loop keeps it seamless
-    rays = []
-    for k in range(8):
-        a = math.radians(k * 45)
-        w = math.radians(7)
-        pts = [(0, 0), (60 * math.cos(a - w), 60 * math.sin(a - w)), (60 * math.cos(a + w), 60 * math.sin(a + w))]
-        rays.append(poly([(round(x, 2), round(y, 2)) for x, y in pts]))
-    rays.append(gfill([(0, c1), (1, c2)], (0, 0), (50, 0), alpha=[(0, 0.55), (0.6, 0.12), (1, 0)], radial=True))
-
     halo = group([ellipse(0, 0, 92), gfill([(0, c2), (1, c3)], (0, 0), (46, 0), alpha=[(0, 0.45), (1, 0)], radial=True)], "halo")
     shadow = group([ellipse(50, 92, 60, 8), gfill([(0, c2), (1, c4)], (50, 92), (80, 92), alpha=[(0, 0.5), (1, 0)], radial=True)],
                    "shadow")
@@ -532,12 +539,11 @@ def owner_layers():
     layers = []
     for n, (x, y, size, t0) in enumerate([(88, 12, 8, 10), (8, 20, 6, 60), (94, 62, 5, 110), (6, 64, 5, 135)]):
         layers.append(sparkle(10 + n, x, y, size, t0))
-    layers.append(layer("tips", tips, 2, p=float_p, a=(50, 50), r=tilt))
-    layers.append(layer("band", band, 3, p=float_p, a=(50, 50), r=tilt))
-    layers.append(layer("crown", crown, 4, p=float_p, a=(50, 50), r=tilt))
+    layers.append(layer("tips", tips, 2, p=float_p, a=(50, 50), s=big, r=tilt))
+    layers.append(layer("band", band, 3, p=float_p, a=(50, 50), s=big, r=tilt))
+    layers.append(layer("crown", crown, 4, p=float_p, a=(50, 50), s=big, r=tilt))
     layers.append(layer("shadow", [shadow], 5,
                         s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [86, 86], (0.45, 0, 0.55, 1)), (OP, [100, 100])])))
-    layers.append(layer("rays", [group(rays, "rays")], 6, p=(50, 48), a=(0, 0), r=anim([(0, 0, LINEAR), (OP, 45)])))
     layers.append(layer("halo", [halo], 7, p=(50, 48), a=(0, 0),
                         s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [112, 112], (0.45, 0, 0.55, 1)), (OP, [100, 100])])))
     return layers
@@ -571,27 +577,80 @@ EMOJI = {
     "owner":     ("👑", "emerald", None, 0),     # unique: crown cut from emerald, for the project owners
 }
 
-SPARKLES = [(86, 10, 9, 0), (10, 30, 6, 50), (92, 70, 5.5, 100), (14, 88, 5, 140)]
+SPARKLES = [(84, 12, 7, 0), (12, 26, 5, 50), (90, 74, 4.5, 100), (14, 84, 4, 140)]
+
+
+ICON_SCALE = 175   # icons are drawn in a 40x40 box around the centre; no badge, so they fill the emoji
+
+
+def jewel_layers(parts, lk, c, shine):
+    """The icon itself is cut from the stone: a deep extrusion underneath, a light-to-deep
+    gradient body, a bevel highlight on the upper-left edges and a glint that runs across."""
+    c1, c2, c3, c4, c5 = c
+    lk = dict(lk)
+    a = lk.pop("a", (50, 50))
+    p = lk.pop("p", a)
+    body_s, body_e = (32, 26), (66, 76)
+
+    def body(part):
+        stops = [(0, c2), (0.5, c3), (1, c4)] if part.get("dim") else [(0, c1), (0.5, c2), (1, c3)]
+        if part["kind"] == "stroke":
+            return gstroke(stops, body_s, body_e, part["w"])
+        return gfill(stops, body_s, body_e)
+
+    def bevel(part):
+        stops, al = [(0, "#ffffff"), (1, "#ffffff")], [(0, 0.95), (0.45, 0.25), (0.7, 0)]
+        if part["kind"] == "stroke":
+            return gstroke(stops, (34, 30), (62, 70), part["w"] * 0.3, alpha=al)
+        return gfill(stops, (34, 30), (58, 64), alpha=[(0, 0.6), (0.5, 0.12), (0.8, 0)])
+
+    t0 = shine
+    s_anim = anim([(0, [-40, -40]), (t0, [-40, -40], (0.5, 0, 0.5, 1)), (t0 + 42, [70, 70])])
+    e_anim = anim([(0, [0, 0]), (t0, [0, 0], (0.5, 0, 0.5, 1)), (t0 + 42, [110, 110])])
+    band = [(0, "#ffffff"), (1, "#ffffff")]
+    band_a = [(0, 0), (0.38, 0), (0.5, 0.85), (0.62, 0), (1, 0)]
+
+    def glint(part):
+        if part["kind"] == "stroke":
+            return gstroke(band, s_anim, e_anim, part["w"], alpha=band_a)
+        return gfill(band, s_anim, e_anim, alpha=band_a)
+
+    def depth(color):
+        return lambda part: stroke(color, part["w"]) if part["kind"] == "stroke" else fill(color)
+
+    root = {"ddd": 0, "ind": 30, "ty": 3, "nm": "scale", "sr": 1, "ao": 0,
+            "ks": {"o": val(0), "r": val(0), "p": val([50, 51]), "a": val([50, 50]),
+                   "s": anim([(0, [ICON_SCALE] * 2, (0.45, 0, 0.55, 1)), (OP / 2, [ICON_SCALE * 1.025] * 2, (0.45, 0, 0.55, 1)),
+                              (OP, [ICON_SCALE] * 2)])},
+            "ip": 0, "op": OP, "st": 0}
+    icon = layer("body", paint(parts, body), 21, p=p, a=a, parent=30, **lk)
+    sub = lambda name, ind, style, dx=0, dy=0, o=100: layer(name, paint(parts, style), ind, p=(a[0] + dx, a[1] + dy), a=a,
+                                                             o=o, parent=21)
+    glow = layer("glow", [group([ellipse(50, 52, 92), gfill([(0, c2), (1, c3)], (50, 52), (96, 52),
+                                                               alpha=[(0, 0.32), (0.55, 0.1), (1, 0)], radial=True)], "glow")], 26,
+                 s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [110, 110], (0.45, 0, 0.55, 1)), (OP, [100, 100])]))
+    return [sub("glint", 20, glint), sub("bevel", 22, bevel, -0.35, -0.45),
+            icon,
+            sub("depth", 23, depth(c4), 0, 1.3), sub("depth2", 24, depth(c5), 0, 2.5),
+            sub("shadow", 25, depth("#000000"), 0, 4, o=28),
+            glow, root]
 
 
 def build(name):
     _, theme, icon, shine = EMOJI[name]
     if icon is None:
-        return {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100,
-                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": owner_layers()}
-    c = THEMES[theme]
-    parts, lk = icon()
-    lk = dict(lk)
-    a = lk.pop("a", (50, 50))
-    p = lk.pop("p", a)
-    layers = []
-    for n, (x, y, size, t0) in enumerate(SPARKLES):
-        layers.append(sparkle(10 + n, x, y, size, (t0 + shine) % (OP - 40)))
-    icon_l = layer("icon", paint(parts, WHITE), 2, p=p, a=a, **lk)
-    shadow = layer("icon-shadow", paint(parts, c[4]), 3, p=(a[0], a[1] + 2.4), a=a, o=55, parent=2)
-    gem = layer("gem", gem_shapes(c, shine), 4,
-                s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [97, 97], (0.45, 0, 0.55, 1)), (OP, [100, 100])]))
-    layers += [icon_l, shadow, gem]
+        layers = owner_layers()
+    else:
+        c = THEMES[theme]
+        layers = []
+        for n, (x, y, size, t0) in enumerate(SPARKLES):
+            layers.append(sparkle(10 + n, x, y, size, (t0 + shine) % (OP - 40)))
+        if name == "gem":            # the brand emoji is the stone itself
+            layers.append(layer("gem", gem_shapes(c, shine), 2,
+                                s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [96, 96], (0.45, 0, 0.55, 1)),
+                                        (OP, [100, 100])])))
+        else:
+            layers += jewel_layers(*icon(), c, shine)
     return {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100,
             "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": layers}
 
