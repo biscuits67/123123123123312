@@ -38,8 +38,8 @@ def grade(a, i):
     # chromatic aberration: shift red out, blue in, growing towards the corners
     shift = (r2 * 10).astype(np.float32)
     def sample(ch, k):
-        sx = np.clip(xx + dx * shift * k * w * 0.01, 0, w - 1).astype(np.int32)
-        sy = np.clip(yy + dy * shift * k * h * 0.01, 0, h - 1).astype(np.int32)
+        sx = np.clip(xx + dx * shift * k * w * 0.0009, 0, w - 1).astype(np.int32)
+        sy = np.clip(yy + dy * shift * k * h * 0.0009, 0, h - 1).astype(np.int32)
         return a[sy, sx, ch]
     a = np.stack([sample(0, 1.0), a[..., 1], sample(2, -1.0)], axis=-1)
     # contrast curve with deep blacks + emerald tint in the shadows
