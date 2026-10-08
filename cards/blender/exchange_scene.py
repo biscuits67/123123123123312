@@ -114,12 +114,13 @@ def neon_text(body, size, loc, material, tube=0.022, rot=(math.radians(90), 0, 0
     return o
 
 
-def solid_text(body, size, loc, materials, extrude=0.04, rot=(math.radians(90), 0, 0), bevel=0.008):
+def solid_text(body, size, loc, materials, extrude=0.04, rot=(math.radians(90), 0, 0), bevel=0.008,
+               font=FONT, spacing=1.25):
     cu = bpy.data.curves.new(body, "FONT")
-    cu.body, cu.font, cu.size = body, bpy.data.fonts.load(FONT), size
+    cu.body, cu.font, cu.size = body, bpy.data.fonts.load(font, check_existing=True), size
     cu.extrude, cu.bevel_depth, cu.bevel_resolution = extrude, bevel, 2
     cu.align_x, cu.align_y = "CENTER", "CENTER"
-    cu.space_character = 1.25
+    cu.space_character = spacing
     o = bpy.data.objects.new(body, cu)
     bpy.context.scene.collection.objects.link(o)
     o.location, o.rotation_euler = loc, rot
@@ -312,7 +313,7 @@ def build():
     dark_metal = mat("dark_metal", (0.02, 0.022, 0.022), metal=1.0, rough=0.35)
     steel = mat("steel", (0.3, 0.33, 0.32), metal=1.0, rough=0.25)
     marble = mat("counter", (0.01, 0.012, 0.012), rough=0.08, coat=1.0)
-    neon = emission("neon_emerald", EM["neon"], 22.0)
+    neon = emission("neon_emerald", EM["neon"], 7.0)
     neon_led = emission("led", EM["neon"], 8.0)
     white_box = emission("lightbox", (0.92, 1.0, 0.96), 6.0)
     warm = emission("warm", (1.0, 0.72, 0.45), 12.0)
@@ -341,8 +342,16 @@ def build():
     # sign band + neon
     band = obj("signband", box_mesh("sb", 7.6, 0.4, 1.25), mat("signbox", (0.006, 0.006, 0.007), metal=0.5, rough=0.5, coat=0.2), loc=(0, 0.05, 3.95))
     bevel(band, 0.03)
-    neon_main = neon_text("EMERALD", 0.86, (0, -0.17, 4.14), neon, tube=0.026)
-    exch = solid_text("EXCHANGE", 0.34, (0, -0.17, 3.52), [white_box], bevel=0.0)
+    # channel letters in the brand typeface (Inter Display Bold, wide tracking like the logo on the cards):
+    # dark metal returns, glowing emerald faces, and a soft halo washing the sign band behind them
+    BRAND = "/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf"
+    letter_metal = mat("letter_metal", (0.02, 0.022, 0.022), metal=1.0, rough=0.3)
+    solid_text("EMERALD", 0.8, (0, -0.2, 4.12), [letter_metal], extrude=0.05, bevel=0.004, font=BRAND, spacing=1.32)
+    solid_text("EMERALD", 0.8, (0, -0.257, 4.12), [neon], extrude=0.0, bevel=0.0, font=BRAND, spacing=1.32)
+    halo = solid_text("EMERALD", 0.8, (0, -0.145, 4.12), [emission("halo", EM["neon"], 3.0)], extrude=0.0, bevel=0.0,
+                      font=BRAND, spacing=1.32)
+    halo.scale = (1.03, 1.03, 1.03)
+    exch = solid_text("EXCHANGE", 0.24, (0, -0.2, 3.52), [white_box], bevel=0.0, font=BRAND, spacing=1.9)
     obj("sign_led", box_mesh("sl", 7.5, 0.03, 0.03), neon_led, loc=(0, -0.16, 3.33))
     # upper floors of the building
     # standalone pavilion: flat roof over the store, the city stands behind it
@@ -549,7 +558,7 @@ def build():
 
     # neon EMERALD: burning, then sputtering like a faulty transformer
     em_sock = neon.node_tree.nodes["Emission"].inputs["Strength"]
-    flicker(em_sock, [(18, 20), (22, 23), (24, 27), (61, 62), (64, 70), (72, 73), (98, 99), (101, 104)], 22.0, 0.4,
+    flicker(em_sock, [(18, 20), (22, 23), (24, 27), (61, 62), (64, 70), (72, 73), (98, 99), (101, 104)], 7.0, 0.3,
             neon_light, 200, 10)
 
     # ---- camera: low, slow push towards the store
