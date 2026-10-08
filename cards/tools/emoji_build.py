@@ -83,18 +83,21 @@ def stroke(color, w, o=100):
     return {"ty": "st", "c": val(rgb(color)), "o": prop(o), "w": prop(w), "lc": 2, "lj": 2, "ml": 4}
 
 
-def gfill(stops, s, e, o=100, alpha=None):
+def gfill(stops, s, e, o=100, alpha=None, radial=False):
     """stops: [(offset, color), ...]; alpha: optional [(offset, opacity 0..1)];
-    s/e: start/end points (static or anim)."""
+    s/e: start/end points (static or anim) — for a radial gradient: centre and a point on the edge."""
     k = []
     for off, c in stops:
         k += [off] + rgb(c)[:3]
     for off, a in alpha or []:
         k += [off, a]
-    return {"ty": "gf", "o": prop(o), "r": 1, "t": 1,
-            "s": prop(s if isinstance(s, dict) else list(s)),
-            "e": prop(e if isinstance(e, dict) else list(e)),
-            "g": {"p": len(stops), "k": val(k)}}
+    g = {"ty": "gf", "o": prop(o), "r": 1, "t": 2 if radial else 1,
+         "s": prop(s if isinstance(s, dict) else list(s)),
+         "e": prop(e if isinstance(e, dict) else list(e)),
+         "g": {"p": len(stops), "k": val(k)}}
+    if radial:
+        g.update(h=val(0), a=val(0))
+    return g
 
 
 def trim(start=0, end=100, offset=0):
@@ -460,6 +463,86 @@ def icon_bell():
                                                (68, 0), (OP, 0)]), "a": (50, 31), "p": (50, 31)}
 
 
+# ---------------------------------------------------------------- owner: crown cut from emerald
+def owner_layers():
+    """Unique emoji for the project owners: an emerald-cut crown on a gold band, turning
+    light rays behind it, a glint across the stone and twinkling gold tips."""
+    c1, c2, c3, c4, c5 = THEMES["emerald"]
+    g1, g2, g3, g4, _ = THEMES["gold"]
+    A, B, C, D, E = (11, 37), (31, 54), (50, 14), (69, 54), (89, 37)
+    G, H, Mb = (19, 75), (81, 75), (50, 75)
+    L, Q, R, S = (29, 65), (42, 59), (58, 59), (71, 65)
+    outline = [A, B, C, D, E, H, G]
+    facets = [([A, B, L, G], c2), ([B, Q, L], c3), ([B, C, Q], c1), ([C, Mb, Q], c2), ([C, R, Mb], c3),
+              ([C, D, R], c2), ([D, S, R], c4), ([D, E, H, S], c3), ([G, L, Q, Mb], c4), ([Mb, R, S, H], c5)]
+    float_p = anim([(0, [50, 50], (0.45, 0, 0.55, 1)), (OP / 2, [50, 47.5], (0.45, 0, 0.55, 1)), (OP, [50, 50])])
+    tilt = anim([(0, 0, (0.45, 0, 0.55, 1)), (OP / 4, -3, (0.45, 0, 0.55, 1)), (OP * 3 / 4, 3, (0.45, 0, 0.55, 1)), (OP, 0)])
+
+    crown = []
+    # edges
+    lines = [poly(outline)] + [poly([a, b], False) for a, b in
+                               [(B, L), (B, Q), (Q, L), (C, Q), (C, Mb), (C, R), (R, D), (R, S), (S, D), (Q, Mb), (R, Mb), (L, G), (S, H)]]
+    crown.append(group(lines + [stroke("#ffffff", 0.9, 30)], "edges"))
+    # glint sweeping across the stone (frames 40-85 and a softer one at 120-160)
+    sweep = lambda a0, a1: anim([(0, a0), (40, a0, (0.5, 0, 0.5, 1)), (85, a1, HOLD), (86, a0), (120, a0, (0.5, 0, 0.5, 1)),
+                                 (160, a1), (OP, a1)])
+    crown.append(group([poly(outline), gfill([(0, "#ffffff"), (1, "#ffffff")], sweep([-50, -10], [80, 40]),
+                                             sweep([0, 30], [130, 80]),
+                                             alpha=[(0, 0), (0.36, 0), (0.5, 0.7), (0.64, 0), (1, 0)])], "shine"))
+    crown.append(group([poly([A, B, L, G])] + [fill("#ffffff", 10)], "gloss"))
+    for n, (pts, col) in enumerate(facets):
+        crown.append(group([poly(pts), fill(col)], f"facet{n}"))
+
+    # gold band with three small emeralds
+    band = []
+    for n, x in enumerate((32, 50, 68)):
+        tw = anim([(0, [100, 100]), (30 + n * 14, [100, 100], (0.4, 0, 0.3, 1.6)), (40 + n * 14, [135, 135]),
+                   (56 + n * 14, [100, 100]), (OP, [100, 100])])
+        gem = star_pts(0, 0, 5.2, 5.2 * 0.92, n=4, rot=-90)          # octagon-ish stone
+        band.append(group([poly(star_pts(0, 0, 2, 2 * 0.92, n=4, rot=-90)), fill("#ffffff", 70)], f"glint{n}",
+                          p=(x - 1.4, 79.6), s=tw))
+        band.append(group([poly(gem), gfill([(0, c1), (0.5, c2), (1, c4)], (-4, -4), (4, 4))], f"stone{n}", p=(x, 81), s=tw))
+        band.append(group([ellipse(x, 81, 12)] + [fill(g3)], f"set{n}"))
+    band.append(group([rect(50, 81, 66, 12, 4)] + [stroke(g1, 1, 45)], "band-edge"))
+    band.append(group([rect(50, 81, 66, 12, 4), gfill([(0, g1), (0.45, g2), (1, g3)], (50, 75), (50, 87))], "band"))
+
+    # gold balls on the tips
+    tips = []
+    for n, (x, y) in enumerate((A, C, E)):
+        r = 8.5 if n == 1 else 6.5
+        glow = anim([(0, [100, 100]), (60 + n * 10, [100, 100], (0.4, 0, 0.3, 1.6)), (70 + n * 10, [125, 125]),
+                     (90 + n * 10, [100, 100]), (OP, [100, 100])])
+        tips.append(group([ellipse(0, 0, r * 0.38), fill("#ffffff", 85)], f"hl{n}", p=(x - r * 0.18, y - r * 0.2 - 1)))
+        tips.append(group([ellipse(0, 0, r), gfill([(0, g1), (1, g3)], (-r / 2, -r / 2), (r / 2, r / 2))],
+                          f"tip{n}", p=(x, y - 1), s=glow))
+
+    # rays behind: 8 soft wedges, a 45° turn per loop keeps it seamless
+    rays = []
+    for k in range(8):
+        a = math.radians(k * 45)
+        w = math.radians(7)
+        pts = [(0, 0), (60 * math.cos(a - w), 60 * math.sin(a - w)), (60 * math.cos(a + w), 60 * math.sin(a + w))]
+        rays.append(poly([(round(x, 2), round(y, 2)) for x, y in pts]))
+    rays.append(gfill([(0, c1), (1, c2)], (0, 0), (50, 0), alpha=[(0, 0.55), (0.6, 0.12), (1, 0)], radial=True))
+
+    halo = group([ellipse(0, 0, 92), gfill([(0, c2), (1, c3)], (0, 0), (46, 0), alpha=[(0, 0.45), (1, 0)], radial=True)], "halo")
+    shadow = group([ellipse(50, 92, 60, 8), gfill([(0, c2), (1, c4)], (50, 92), (80, 92), alpha=[(0, 0.5), (1, 0)], radial=True)],
+                   "shadow")
+
+    layers = []
+    for n, (x, y, size, t0) in enumerate([(88, 12, 8, 10), (8, 20, 6, 60), (94, 62, 5, 110), (6, 64, 5, 135)]):
+        layers.append(sparkle(10 + n, x, y, size, t0))
+    layers.append(layer("tips", tips, 2, p=float_p, a=(50, 50), r=tilt))
+    layers.append(layer("band", band, 3, p=float_p, a=(50, 50), r=tilt))
+    layers.append(layer("crown", crown, 4, p=float_p, a=(50, 50), r=tilt))
+    layers.append(layer("shadow", [shadow], 5,
+                        s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [86, 86], (0.45, 0, 0.55, 1)), (OP, [100, 100])])))
+    layers.append(layer("rays", [group(rays, "rays")], 6, p=(50, 48), a=(0, 0), r=anim([(0, 0, LINEAR), (OP, 45)])))
+    layers.append(layer("halo", [halo], 7, p=(50, 48), a=(0, 0),
+                        s=anim([(0, [100, 100], (0.45, 0, 0.55, 1)), (OP / 2, [112, 112], (0.45, 0, 0.55, 1)), (OP, [100, 100])])))
+    return layers
+
+
 # name: (fallback emoji, theme, icon, shine frame)
 EMOJI = {
     "gem":       ("💎", "emerald", icon_gem, 40),
@@ -485,6 +568,7 @@ EMOJI = {
     "globe":     ("🌐", "emerald", icon_globe, 100),
     "hourglass": ("⏳", "emerald", icon_hourglass, 60),
     "bell":      ("🔔", "emerald", icon_bell, 90),
+    "owner":     ("👑", "emerald", None, 0),     # unique: crown cut from emerald, for the project owners
 }
 
 SPARKLES = [(86, 10, 9, 0), (10, 30, 6, 50), (92, 70, 5.5, 100), (14, 88, 5, 140)]
@@ -492,6 +576,9 @@ SPARKLES = [(86, 10, 9, 0), (10, 30, 6, 50), (92, 70, 5.5, 100), (14, 88, 5, 140
 
 def build(name):
     _, theme, icon, shine = EMOJI[name]
+    if icon is None:
+        return {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100,
+                "nm": f"emerald_{name}", "ddd": 0, "assets": [], "layers": owner_layers()}
     c = THEMES[theme]
     parts, lk = icon()
     lk = dict(lk)

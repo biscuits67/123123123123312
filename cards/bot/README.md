@@ -53,11 +53,15 @@ backgrounds + `layout.json` used by the Python code.
 
 # Emerald animated emoji
 
-`emerald_emoji/` holds 23 animated custom emoji in the same style as the cards: an emerald-cut stone
+`emerald_emoji/` holds 24 animated custom emoji in the same style as the cards: an emerald-cut stone
 with a white icon, a light glint and sparkles. They're 3-second loops in Telegram's `.tgs` format
 (100×100, 60 fps, ~1.5 KB each). Negative actions use a ruby stone and ratings/money use gold.
 Frame 0 is always the complete icon, so the emoji also reads correctly when animations are off.
 Preview: `../emoji_preview.gif`.
+
+`owner` is a one-off emoji for the project owners. Instead of an icon on a stone, the crown itself is
+cut from emerald and sits on a gold band set with three emeralds. Light rays turn behind it, a glint
+runs across the facets and the gold tips sparkle. Preview: `../emoji_owner.gif`.
 
 | name | emoji | | name | emoji | | name | emoji |
 |---|---|---|---|---|---|---|---|
@@ -68,7 +72,7 @@ Preview: `../emoji_preview.gif`.
 | `wallet` | 💳 | | `chat` | 💬 | | `globe` | 🌐 |
 | `star` | ⭐ | | `link` | 🔗 | | `hourglass` | ⏳ |
 | `payout` | 💸 | | `book` | 📕 | | `bell` | 🔔 |
-| `bolt` | ⚡ | | `users` | 👥 | | | |
+| `bolt` | ⚡ | | `users` | 👥 | | **`owner`** | 👑 |
 
 **1. Upload the pack once** (needs `aiogram` 3.x). `OWNER_ID` is your Telegram id, and you must have started the bot:
 
