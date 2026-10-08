@@ -146,17 +146,17 @@
 
       <!-- icon -->
       <g id="icon-ok" style="display:none">
-        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
         <path d="M162,232 L190,260 L242,204" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,5)" filter="url(#soft)"/>
         <path d="M162,232 L190,260 L242,204" fill="none" stroke="#f2fff9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <g id="icon-no" style="display:none">
-        <circle cx="200" cy="230" r="72" fill="#1a0207" opacity=".35"/>
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
         <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" transform="translate(0,5)" filter="url(#soft)"/>
         <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#fff5f6" stroke-width="18" stroke-linecap="round"/>
       </g>
       <g id="icon-wallet" style="display:none">
-        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
         <g transform="translate(0,5)" opacity=".35" filter="url(#soft)"><rect x="158" y="196" width="88" height="68" rx="14" fill="#000"/></g>
         <path d="M168,198 L222,180 Q230,178 232,186 L235,196" fill="none" stroke="#f2fff9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
         <rect x="158" y="196" width="88" height="68" rx="14" fill="none" stroke="#f2fff9" stroke-width="10"/>
@@ -164,9 +164,29 @@
         <circle cx="226" cy="230" r="5" fill="var(--c3)"/>
       </g>
       <g id="icon-star" style="display:none">
-        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
         <path d="M200,186 L212,214 L242,217 L219,237 L226,267 L200,251 L174,267 L181,237 L158,217 L188,214 Z" fill="#000" opacity=".35" transform="translate(0,5)" filter="url(#soft)"/>
         <path d="M200,186 L212,214 L242,217 L219,237 L226,267 L200,251 L174,267 L181,237 L158,217 L188,214 Z" fill="#f2fff9" stroke="#f2fff9" stroke-width="8" stroke-linejoin="round"/>
+      </g>
+      <g id="icon-pen" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g transform="rotate(45 200 230)">
+          <rect x="186" y="170" width="28" height="92" rx="6" fill="#000" opacity=".3" transform="translate(4,5)" filter="url(#soft)"/>
+          <rect x="186" y="170" width="28" height="78" rx="6" fill="#f2fff9"/>
+          <rect x="186" y="186" width="28" height="7" fill="var(--c3)"/>
+          <path d="M186,252 L214,252 L200,282 Z" fill="#f2fff9"/>
+        </g>
+      </g>
+      <g id="icon-payout" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <path d="M200,180 V240 M176,204 L200,180 L224,204 M158,232 V258 Q158,270 170,270 H230 Q242,270 242,258 V232" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,5)" filter="url(#soft)"/>
+        <path d="M200,180 V240 M176,204 L200,180 L224,204 M158,232 V258 Q158,270 170,270 H230 Q242,270 242,258 V232" fill="none" stroke="#f2fff9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <g id="icon-coin" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <circle cx="200" cy="235" r="46" fill="#000" opacity=".3" filter="url(#soft)"/>
+        <circle cx="200" cy="230" r="46" fill="none" stroke="#f2fff9" stroke-width="10"/>
+        <text x="200" y="254" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="66" fill="#f2fff9">$</text>
       </g>
     </svg>
     <div class="sparkle" style="left:300px;top:-6px"></div>
@@ -196,7 +216,37 @@
       status:"Настройка ника",
       title:'Новый<br><span>ник</span>',
       text:"Введите ник, который будет отображаться <b>в&nbsp;отстуке</b>.",
-      foot:"Отправьте ник ответным сообщением" }
+      foot:"Отправьте ник ответным сообщением" },
+    address: { theme:"", icon:"pen",
+      status:"Адрес кошелька",
+      title:'Новый<br><span>адрес</span>',
+      text:"Введите новый адрес <b>вашего кошелька</b>.",
+      foot:"Проверьте адрес перед отправкой" },
+    payout: { theme:"", icon:"payout",
+      status:"Выплата",
+      title:'Заказ<br><span>выплаты</span>',
+      text:"На какой кошелёк вы хотите <b>заказать выплату</b>?",
+      foot:"Выберите кошелёк ниже" },
+    payout_ok: { theme:"", icon:"ok",
+      status:"Выплата совершена",
+      title:'Выплата<br><span>совершена</span>',
+      text:"Средства отправлены. <b>Проверьте кошелёк.</b>",
+      foot:"Спасибо, что вы с Emerald" },
+    payout_no: { theme:"no", icon:"no",
+      status:"Выплата отклонена",
+      title:'Выплата<br><span>отклонена</span>',
+      text:"Деньги вернулись <b>на ваш баланс</b>.",
+      foot:"Средства снова доступны" },
+    no_wallet: { theme:"no", icon:"wallet",
+      status:"Нет кошелька",
+      title:'Кошелёк<br><span>не указан</span>',
+      text:"Укажите кошелёк <b>для выплаты</b>, чтобы продолжить.",
+      foot:"Без кошелька выплата недоступна" },
+    amount: { theme:"", icon:"coin",
+      status:"Выплата",
+      title:'Сумма<br><span>выплаты</span>',
+      text:"Введите сумму выплаты. <b>Доступный баланс</b>&nbsp;— в сообщении ниже.",
+      foot:"Отправьте сумму ответным сообщением" }
   };
   const k = V[new URLSearchParams(location.search).get("v")] ? new URLSearchParams(location.search).get("v") : "ok";
   if (V[k].theme) document.body.classList.add(V[k].theme);
