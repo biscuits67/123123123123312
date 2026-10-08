@@ -38,6 +38,7 @@
 | `cards.static("unknown_command")` | Неизвестная команда | image file |
 | `cards.static("banned")` | ⛔️ Вы были заблокированы администрацией | image file |
 | `cards.static("profile_error")` | ⛔️ Ошибка профиля | image file |
+| `cards.new_deposit(worker, amount)` | 🚀 Новый депозит · Воркер · Сумма USD | drawn: worker, amount |
 
 Static cards are JPEG files. Dynamic functions return JPEG bytes (~80 ms per card) — send them with
 `BufferedInputFile(data, "emerald.jpg")`. See `example_aiogram.py`.

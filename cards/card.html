@@ -80,6 +80,12 @@
   .tile{display:flex;flex-direction:column;gap:10px;padding:18px 20px;border-radius:18px;
     background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09)}
   .tile .pl-label{color:#7fa595}
+  /* new deposit layout */
+  body.deposit .left{width:740px}
+  body.deposit h1{font-size:76px}
+  body.deposit .tiles{margin-top:30px}
+  body.deposit .tile{padding:18px 22px}
+  body.deposit .gemwrap{right:40px;transform:translateY(-50%) scale(.78)}
   /* domains list layout (rows are drawn by the bot) */
   body.list .left{width:740px}
   body.list .status{display:none}
@@ -233,6 +239,16 @@
         <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M150,230 L250,186 L226,274 L198,244 Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M250,186 L198,244 L196,272" fill="none" stroke="var(--c3)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
         <g style="color:#f2fff9"><path d="M150,230 L250,186 L226,274 L198,244 Z" fill="currentColor" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M250,186 L198,244 L196,272" fill="none" stroke="var(--c3)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
       </g>
+      <g id="icon-rocket" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><g transform="rotate(45 200 230)"><path d="M200,170 C222,188 228,218 224,262 L176,262 C172,218 178,188 200,170 Z" fill="currentColor"/><path d="M176,236 L156,270 L178,262 Z M224,236 L244,270 L222,262 Z" fill="currentColor"/></g></g>
+        <g transform="rotate(45 200 230)">
+          <path d="M188,266 Q200,300 212,266 Z" fill="var(--c1)"/>
+          <path d="M176,236 L156,270 L178,262 Z M224,236 L244,270 L222,262 Z" fill="#f2fff9"/>
+          <path d="M200,170 C222,188 228,218 224,262 L176,262 C172,218 178,188 200,170 Z" fill="#f2fff9"/>
+          <circle cx="200" cy="214" r="11" fill="var(--c3)"/>
+        </g>
+      </g>
       <g id="icon-retry" style="display:none">
         <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
         <g filter="url(#soft)" opacity=".35" transform="translate(0,5)" style="color:#000"><path d="M236,212 A42,42 0 1 0 242,236" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><path d="M244,184 L240,216 L208,212" fill="none" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>
@@ -377,6 +393,7 @@
     unknown: { theme:'no', icon:'question', status:'Неизвестная команда', title:"Команда<br><span>не найдена</span>", text:'Пожалуйста, <b>выберите действие</b> из меню.', foot:'Нет меню? Отправьте /start' },
     banned: { theme:'no', icon:'ban', status:'Доступ закрыт', title:"Вы<br><span>заблокированы</span>", text:'Ваш аккаунт <b>заблокирован администрацией</b>.', foot:'' },
     profile_error: { theme:'no', icon:'alert', status:'Ошибка', title:"Ошибка<br><span>профиля</span>", text:'Не удалось загрузить профиль. <b>Обратитесь к&nbsp;администратору.</b>', foot:'' },
+    deposit: { icon:'rocket', cls:'deposit', status:'Новый депозит', title:"Новый<br><span>депозит</span>", text:'', extra:'<div class="tiles"><div class="tile"><span class="pl-label">Воркер</span><span class="slot white" data-slot="worker" data-size="40" data-weight="bold" data-sample="@emerald" style="width:300px;height:52px;line-height:52px"></span></div><div class="tile"><span class="pl-label">Сумма USD</span><span class="slot grad" data-slot="amount" data-size="46" data-weight="bold" data-sample="$1 250.75" style="width:300px;height:56px;line-height:56px"></span></div></div>', foot:'Поздравляем с профитом!' },
   };
   const q = new URLSearchParams(location.search);
   const k = V[q.get("v")] ? q.get("v") : "ok";

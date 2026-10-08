@@ -214,5 +214,31 @@
         "kind": "top"
       }
     }
+  },
+  "new_deposit": {
+    "theme": "emerald",
+    "scale": 1.5,
+    "slots": {
+      "worker": {
+        "x": 107,
+        "y": 431.46875,
+        "w": 300,
+        "h": 52,
+        "size": 40,
+        "weight": "bold",
+        "style": "white",
+        "kind": "text"
+      },
+      "amount": {
+        "x": 465,
+        "y": 431.46875,
+        "w": 300,
+        "h": 56,
+        "size": 46,
+        "weight": "bold",
+        "style": "grad",
+        "kind": "text"
+      }
+    }
   }
 }

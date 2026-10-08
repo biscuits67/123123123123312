@@ -114,3 +114,12 @@ def top_deposits(period, rows) -> bytes:
         raise ValueError(f"period must be one of {list(TOP_PERIODS)}")
     prepared = [(name, money(amount) if isinstance(amount, (int, float)) else amount) for name, amount in rows]
     return render(TOP_PERIODS[period], rows=prepared)
+
+
+def new_deposit(worker, amount) -> bytes:
+    """🚀 Новый депозит 🧑‍💻 Воркер: {worker} 💵 Сумма USD: ${amount}"""
+    try:
+        amount = "$" + f"{round(float(amount), 2):,.2f}".replace(",", " ")
+    except (TypeError, ValueError):
+        amount = f"${amount}"
+    return render("new_deposit", worker=worker, amount=amount)

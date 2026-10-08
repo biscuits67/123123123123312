@@ -18,6 +18,7 @@ const NAMES = {
   materials: 'menu_materials', info: 'menu_info', domains_none: 'domains_not_found',
   top_menu: 'top_deposits', top_day: 'top_day', top_week: 'top_week', top_month: 'top_month', top_all: 'top_all',
   add_domain: 'add_domain', cancelled: 'cancelled', confirmed: 'confirmed', unknown: 'unknown_command', banned: 'banned', profile_error: 'profile_error',
+  deposit: 'new_deposit',
 };
 const THEME = { no: 'ruby', no_wallet: 'ruby', payout_no: 'ruby', failed: 'ruby', number: 'ruby',
   promo_exists: 'ruby', domain_bad: 'ruby', domain_exists: 'ruby', domains_none: 'ruby', unknown: 'ruby', banned: 'ruby', profile_error: 'ruby' };
