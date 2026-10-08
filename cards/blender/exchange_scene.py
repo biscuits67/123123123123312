@@ -333,8 +333,8 @@ def build():
     # ---- the store: facade with a service window, interior, counter
     FX0, FX1 = -2.3, 2.3                    # window opening
     Z0, Z1 = 0.95, 2.95
-    obj("pillarL", box_mesh("pl", 3.0, 0.5, 3.3), concrete, loc=(FX0 - 1.5, 0.25, 1.65))
-    obj("pillarR", box_mesh("pr", 3.0, 0.5, 3.3), concrete, loc=(FX1 + 1.5, 0.25, 1.65))
+    obj("pillarL", box_mesh("pl", 1.6, 0.5, 3.3), concrete, loc=(FX0 - 0.8, 0.25, 1.65))
+    obj("pillarR", box_mesh("pr", 1.6, 0.5, 3.3), concrete, loc=(FX1 + 0.8, 0.25, 1.65))
     obj("under", box_mesh("un", FX1 - FX0, 0.5, Z0), dark_metal, loc=(0, 0.25, Z0 / 2))
     obj("lintel", box_mesh("li", FX1 - FX0, 0.5, 0.35), concrete, loc=(0, 0.25, Z1 + 0.175))
     # sign band + neon
@@ -344,15 +344,15 @@ def build():
     exch = solid_text("EXCHANGE", 0.34, (0, -0.17, 3.52), [white_box], bevel=0.0)
     obj("sign_led", box_mesh("sl", 7.5, 0.03, 0.03), neon_led, loc=(0, -0.16, 3.33))
     # upper floors of the building
-    up = obj("upper", box_mesh("up", 11.6, 0.4, 9.0), windows, loc=(0, 0.6, 9.1))
-    for lp in up.data.uv_layers[0].data:
-        lp.uv = (lp.uv[0] * 4, lp.uv[1] * 4)
+    # standalone pavilion: flat roof over the store, the city stands behind it
+    obj("roof", box_mesh("roof", 8.0, 3.9, 0.25), concrete, loc=(0, 1.7, 4.7))
+    obj("roof_led", box_mesh("rl", 8.2, 0.03, 0.03), neon_led, loc=(0, -0.22, 4.58))
     # rolling shutter, half up
     for i in range(10):
         cyl_between("shutter", (FX0, 0.05, Z1 - 0.04 - i * 0.045), (FX1, 0.05, Z1 - 0.04 - i * 0.045), 0.024, steel, 6)
     # rates board on the left pillar
-    obj("rates", facing_plane("rt", 1.15, 1.42), rates, loc=(FX0 - 1.0, -0.035, 1.75))
-    obj("rates_frame", box_mesh("rf", 1.25, 0.06, 1.52), dark_metal, loc=(FX0 - 1.0, 0.0, 1.75))
+    obj("rates", facing_plane("rt", 1.15, 1.42), rates, loc=(FX0 - 0.8, -0.035, 1.75))
+    obj("rates_frame", box_mesh("rf", 1.25, 0.06, 1.52), dark_metal, loc=(FX0 - 0.8, 0.0, 1.75))
     # counter
     ctr = obj("counter", box_mesh("ct", FX1 - FX0 + 0.3, 0.9, 0.08), marble, loc=(0, -0.05, Z0 + 0.04))
     bevel(ctr, 0.015)
@@ -378,19 +378,30 @@ def build():
     place(instance(pile, "pile2"), psize, 0.2, (-4.2, -1.3, 0.15), math.radians(-20))  # blown onto the sidewalk
 
     # neighbouring shop fronts: darker, other signs, to make the street feel alive
-    for side in (-1, 1):
-        x = side * 9.6
-        obj("nb_facade", box_mesh("nb", 7.0, 0.5, 12.0), concrete, loc=(x, 0.6, 6.0))
-        nbw = obj("nb_win", box_mesh("nbw", 6.6, 0.05, 8.0), windows, loc=(x, 0.33, 8.2))
-        obj("nb_shop", box_mesh("nbs", 5.0, 0.05, 2.4), emission("nb_glow", (1.0, 0.6, 0.35) if side < 0 else (0.5, 0.7, 1.0), 2.5), loc=(x, 0.33, 1.6))
-        obj("nb_strip", box_mesh("nbl", 5.4, 0.04, 0.05), emission("nb_neon", (1.0, 0.2, 0.35) if side < 0 else (0.3, 0.6, 1.0), 14), loc=(x, 0.3, 3.1))
+    # the city block (downloaded model) behind the pavilion
     city, cmeshes, csize = import_model(P("city", "source", "\u0443\u043b\u0438\u0446\u0430 \u0441\u043a\u0435\u0442\u0447.fbx"))
     for im in bpy.data.images:                    # textures sit next to the fbx
         if not im.has_data and im.filepath:
             cand = P("city", "textures", os.path.basename(im.filepath))
             if os.path.exists(cand):
                 im.filepath = cand
-    place(city, csize, 30, (0, 62, -0.3), math.radians(12))
+    place(city, csize, 70, (-4, 112, 0), 0.0)
+    bpy.context.view_layer.update()
+    for o in cmeshes:                             # drop the model's own ground: our wet street is the ground
+        d = o.dimensions
+        if d.z < 0.3 * max(d.x, d.y) * 0.1 or (d.z < 1.0 and max(d.x, d.y) > 4):
+            o.hide_render = True
+    for o in cmeshes:                             # night: photo facades glow faintly, as if lit by the city
+        for m in o.data.materials:
+            if not m or not m.use_nodes:
+                continue
+            nt = m.node_tree
+            bsdf = nt.nodes.get("Principled BSDF")
+            tex = next((n for n in nt.nodes if n.type == "TEX_IMAGE"), None)
+            if bsdf and tex:
+                nt.links.new(tex.outputs["Color"], bsdf.inputs["Emission Color"])
+                bsdf.inputs["Emission Strength"].default_value = 0.07
+                bsdf.inputs["Roughness"].default_value = 0.8
 
     # street lamps
     for x in (-6.3, 6.3):
@@ -463,23 +474,26 @@ def build():
     place(porsche, psize2, 1.31, (2.9, -3.6, 0), math.radians(-128))
     light("SPOT", "911_head", (2.3, -6.2, 0.7), (0.9, 0.97, 1.0), 400, size=0.12, target=(-1, -11, 0), spot=55)
 
-    # ---- traffic: light streaks passing on the far lane (motion blur turns them into trails)
-    for i in range(10):
+    # ---- traffic: thin light trails passing in front of the store (motion blur stretches them)
+    for i in range(12):
         direction = 1 if i % 2 else -1
-        y = -5.9 if direction > 0 else -6.9
-        col = (1.0, 0.08, 0.05) if direction > 0 else (1.0, 0.92, 0.8)
-        mat_l = emission(f"traffic{i}", col, 40)
-        for dz in (0.0,):
-            for dx in (-0.65, 0.65):
-                o = obj("traffic", box_mesh("tl", 0.18, 0.05, 0.08), mat_l)
-                ph = i / 10
-                for f in (1, FRAMES):
-                    p_ = ((f / FRAMES) * 1.6 + ph) % 1
-                    o.location = (direction * (-30 + 60 * ((f - 1) / FRAMES * 1.6 + ph)), y + dx * 0.35, 0.75)
-                    o.keyframe_insert("location", frame=f)
-                for fc in getattr(o.animation_data.action, "fcurves", []):
-                    for k in fc.keyframe_points:
-                        k.interpolation = "LINEAR"
+        y = -5.2 if direction > 0 else -5.9
+        col = (1.0, 0.06, 0.04) if direction > 0 else (1.0, 0.9, 0.75)
+        mat_l = emission(f"traffic{i}", col, 18)
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.018, radius2=0.018, depth=0.5)
+        me = bpy.data.meshes.new("trail")
+        bm.to_mesh(me)
+        bm.free()
+        o = obj("traffic", me, mat_l, rot=(0, math.radians(90), 0))
+        ph = i / 12
+        z = 0.62 + 0.08 * (i % 3)
+        for f in (1, FRAMES):
+            o.location = (direction * (-30 + 60 * ((f - 1) / FRAMES * 1.6 + ph)), y, z)
+            o.keyframe_insert("location", frame=f)
+        for fc in getattr(o.animation_data.action, "fcurves", []):
+            for k in fc.keyframe_points:
+                k.interpolation = "LINEAR"
 
     # ---- wind: banknotes blown off the counter and down the street
     bill_me = box_mesh("bill1", 0.156, 0.066, 0.0015)
@@ -530,7 +544,7 @@ def build():
 
     # ---- camera: low, slow push towards the store
     cam_d = bpy.data.cameras.new("cam")
-    cam_d.lens = 52
+    cam_d.lens = 40
     cam_d.dof.use_dof = True
     cam_d.dof.aperture_fstop = 2.8
     cam = bpy.data.objects.new("cam", cam_d)
@@ -544,7 +558,7 @@ def build():
     sc.collection.objects.link(look)
     tc = cam.constraints.new("TRACK_TO")
     tc.target, tc.track_axis, tc.up_axis = look, "TRACK_NEGATIVE_Z", "UP_Y"
-    for f, cpos, lpos in ((1, (1.6, -9.6, 1.45), (0.0, 0.8, 1.95)), (FRAMES, (1.0, -8.4, 1.5), (0.0, 0.8, 1.9))):
+    for f, cpos, lpos in ((1, (1.6, -9.8, 1.15), (0.0, 0.8, 2.75)), (FRAMES, (1.0, -8.6, 1.2), (0.0, 0.8, 2.7))):
         cam.location, look.location = cpos, lpos
         cam.keyframe_insert("location", frame=f)
         look.keyframe_insert("location", frame=f)
