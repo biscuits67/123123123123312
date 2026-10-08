@@ -180,6 +180,8 @@ def import_model(path):
     before = set(bpy.data.objects)
     if path.lower().endswith((".glb", ".gltf")):
         bpy.ops.import_scene.gltf(filepath=path)
+    elif path.lower().endswith((".usdz", ".usd", ".usdc")):
+        bpy.ops.wm.usd_import(filepath=path)
     else:
         bpy.ops.import_scene.fbx(filepath=path)
     new = [o for o in bpy.data.objects if o not in before]
