@@ -111,5 +111,9 @@ The pack itself always works: anyone with Premium can add it from the link.
 
 `../avatar.png` (1280×1280) is the profile photo in the card style: the cards' emerald wearing the
 emerald crown, with "EMERALD" underneath. Everything sits inside the circle Telegram crops to.
-Set it in @BotFather → /mybots → Edit Bot → Edit Botpic. Source: `../avatar.html`; re-render it with
-`node ../tools/render_avatar.js`.
+Set it in @BotFather → /mybots → Edit Bot → Edit Botpic.
+
+The channels get their own versions with a gold label under the name: `../avatar_chat.png` (ЧАТ),
+`../avatar_deposits.png` (ДЕПОЗИТЫ) and `../avatar_news.png` (NEWS). Source: `../avatar.html`
+(`?sub=TEXT` adds the label). Re-render all of them with `node ../tools/render_avatar.js`, and add
+new labels in its `AVATARS` list.

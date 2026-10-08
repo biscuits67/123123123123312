@@ -40,6 +40,15 @@
     filter:drop-shadow(0 4px 14px rgba(25,196,138,.35))}
   .line{position:absolute;left:50%;top:552px;width:120px;height:2px;transform:translateX(-50%);
     background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.8}
+  .art{position:absolute;inset:0;transform-origin:50% 0}
+  .sub{display:none;position:absolute;left:0;right:0;top:510px;text-align:center}
+  .sub span{display:inline-block;padding:10px 28px 10px calc(28px + .3em);border-radius:999px;font-weight:700;font-size:34px;
+    letter-spacing:.3em;color:var(--gold);border:1.5px solid rgba(216,196,138,.5);
+    background:linear-gradient(180deg,rgba(216,196,138,.12),rgba(216,196,138,.03));box-shadow:0 0 24px rgba(216,196,138,.12)}
+  body.has-sub .art{transform:translateY(-20px) scale(.84)}
+  body.has-sub .name{top:404px;font-size:60px}
+  body.has-sub .line{display:none}
+  body.has-sub .sub{display:block}
   .sparkle{position:absolute;width:26px;height:26px}
   .sparkle::before,.sparkle::after{content:"";position:absolute;left:50%;top:50%;background:#fff;border-radius:2px;transform:translate(-50%,-50%)}
   .sparkle::before{width:2px;height:100%;box-shadow:0 0 10px #fff}
@@ -50,6 +59,7 @@
 <div class="av">
   <div class="grid"></div>
   <div class="rays"></div>
+  <div class="art">
   <div class="gemwrap">
     <div class="glow"></div>
     <div class="shadow"></div>
@@ -127,8 +137,15 @@
   <div class="sparkle" style="left:436px;top:88px"></div>
   <div class="sparkle" style="left:168px;top:228px;transform:scale(.6)"></div>
   <div class="sparkle" style="left:452px;top:372px;transform:scale(.55)"></div>
+  </div>
   <div class="name">EMERALD</div>
   <div class="line"></div>
+  <div class="sub"><span id="sub"></span></div>
 </div>
+<script>
+  // avatar.html?sub=ЧАТ -> subtitle plate under the name (one avatar per channel)
+  const sub = new URLSearchParams(location.search).get("sub");
+  if (sub) { document.body.classList.add("has-sub"); document.getElementById("sub").textContent = sub; }
+</script>
 </body>
 </html>
