@@ -64,8 +64,6 @@ def main():
     for i, f in enumerate(frames):
         out = os.path.join(DST, os.path.basename(f))
         img = Image.open(f).convert("RGB")
-        if "UnsharpMask" in "":
-            pass
         img = img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=70, threshold=2))   # crisper detail
         Image.fromarray((grade(bloom(img), i) * 255).astype(np.uint8)).save(out)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(DST, "%04d.png"),
