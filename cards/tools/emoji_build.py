@@ -696,9 +696,6 @@ def royal_gem():
     crown_d = "M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z"
     stops = [(0, "#e2fff3"), (0.4, "#a8ffd9"), (0.8, c1), (1, c2)]
     crown = []
-    gem = star_pts(50, 54, 8, 8 * 0.92, n=4)
-    crown.append(group([ellipse(47.4, 51.4, 3.4), fill("#ffffff", 90)], "gem-hl"))
-    crown.append(group([poly(gem), gfill([(0, c1), (0.4, c2), (1, c4)], (44, 48), (56, 60))], "gem"))
     crown.append(group(path(crown_d) + [_gstroke([(0, "#ffffff"), (1, "#ffffff")],
                                                  anim([(0, [-30, -30]), (112, [-30, -30], (0.5, 0, 0.5, 1)), (150, [70, 70])]),
                                                  anim([(0, [0, 0]), (112, [0, 0], (0.5, 0, 0.5, 1)), (150, [100, 100])]), 10,
