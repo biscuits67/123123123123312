@@ -52,7 +52,7 @@ def grade(a, i):
     a *= (1 - np.clip((np.sqrt(r2) - 0.32) / 0.5, 0, 1) ** 1.6 * 0.7)[..., None]
     # grain (fresh every frame)
     rng = np.random.default_rng(i)
-    a += rng.normal(0, 0.018, a.shape[:2]).astype(np.float32)[..., None]
+    a += rng.normal(0, 0.007, a.shape[:2]).astype(np.float32)[..., None]
     return np.clip(a, 0, 1)
 
 
@@ -62,6 +62,7 @@ def main():
     for i, f in enumerate(frames):
         out = os.path.join(DST, os.path.basename(f))
         img = Image.open(f).convert("RGB")
+        img = img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=70, threshold=2))   # crisper detail
         Image.fromarray((grade(bloom(img), i) * 255).astype(np.uint8)).save(out)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(DST, "%04d.png"),
                     "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", OUT],
