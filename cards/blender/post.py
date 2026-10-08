@@ -8,14 +8,16 @@ towards the edges, vignette and fine film grain. Needs Pillow, numpy and ffmpeg.
 import glob
 import os
 import subprocess
+import sys
 
 import numpy as np
 from PIL import Image, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "renders", "frames")
-DST = os.path.join(HERE, "renders", "post")
-OUT = os.path.join(os.path.dirname(HERE), "emerald_blender.mp4")
+NAME = sys.argv[1] if len(sys.argv) > 1 else "frames"          # python post.py exchange -> renders/exchange
+SRC = os.path.join(HERE, "renders", NAME)
+DST = os.path.join(HERE, "renders", NAME + "_post")
+OUT = os.path.join(os.path.dirname(HERE), "emerald_blender.mp4" if NAME == "frames" else f"emerald_{NAME}.mp4")
 FPS = 24
 
 
@@ -62,6 +64,8 @@ def main():
     for i, f in enumerate(frames):
         out = os.path.join(DST, os.path.basename(f))
         img = Image.open(f).convert("RGB")
+        if "UnsharpMask" in "":
+            pass
         img = img.filter(ImageFilter.UnsharpMask(radius=1.4, percent=70, threshold=2))   # crisper detail
         Image.fromarray((grade(bloom(img), i) * 255).astype(np.uint8)).save(out)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", os.path.join(DST, "%04d.png"),
