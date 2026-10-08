@@ -63,48 +63,30 @@
     "theme": "emerald",
     "scale": 1.5,
     "slots": {
-      "owner_name": {
-        "x": 107,
-        "y": 327.296875,
-        "w": 560,
-        "h": 38,
-        "size": 30,
-        "weight": "semibold",
-        "style": "white"
-      },
-      "owner_meta": {
-        "x": 107,
-        "y": 371.296875,
-        "w": 560,
-        "h": 24,
-        "size": 18,
-        "weight": "medium",
-        "style": "muted"
-      },
       "members": {
-        "x": 103,
-        "y": 465.296875,
+        "x": 105,
+        "y": 396.546875,
         "w": 150,
-        "h": 46,
-        "size": 38,
+        "h": 60,
+        "size": 50,
         "weight": "bold",
         "style": "grad"
       },
       "turnover": {
-        "x": 303,
-        "y": 465.296875,
-        "w": 240,
-        "h": 46,
-        "size": 38,
+        "x": 309,
+        "y": 396.546875,
+        "w": 270,
+        "h": 60,
+        "size": 50,
         "weight": "bold",
         "style": "grad"
       },
       "percent": {
-        "x": 593,
-        "y": 465.296875,
-        "w": 120,
-        "h": 46,
-        "size": 38,
+        "x": 633,
+        "y": 396.546875,
+        "w": 130,
+        "h": 60,
+        "size": 50,
         "weight": "bold",
         "style": "grad"
       }

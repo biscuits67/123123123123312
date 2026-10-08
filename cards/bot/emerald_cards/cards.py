@@ -53,13 +53,10 @@ def payout_amount(balance) -> bytes:
     return render("payout_amount", balance=money(balance))
 
 
-def branch_info(owner_name, owner_username, owner_id, members, turnover, percent) -> bytes:
-    """👑 Owner / 👥 Участников / 💰 Оборот филиала / 📊 Процент филиала"""
-    meta = " · ".join(p for p in (_at(owner_username), f"ID {owner_id}") if p)
+def branch_info(members, turnover, percent) -> bytes:
+    """👥 Участников / 💰 Оборот филиала / 📊 Процент филиала"""
     return render(
         "branch_info",
-        owner_name=owner_name or "—",
-        owner_meta=meta,
         members=members,
         turnover=money(round(float(turnover), 2)),
         percent=f"{percent}%",

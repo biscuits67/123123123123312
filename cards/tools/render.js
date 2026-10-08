@@ -33,7 +33,8 @@ const ASSETS = path.join(DIR, 'bot', 'emerald_cards', 'assets');
     if (slots.length) {                                              // dynamic card -> base + layout
       await page.goto(url + '&mode=base'); await page.waitForTimeout(250);
       await page.screenshot({ path: path.join(ASSETS, 'bases', `${name}.png`) });
-      layout[name] = { theme: THEME[v] || 'emerald', scale: SCALE, slots: Object.fromEntries(slots.map(s => [s.name, s])) };
+      layout[name] = {  // replaced fully on each render
+        theme: THEME[v] || 'emerald', scale: SCALE, slots: Object.fromEntries(slots.map(s => [s.name, s])) };
       for (const s of slots) delete layout[name].slots[s.name].name;
     } else {
       fs.copyFileSync(`${DIR}/${name}.png`, path.join(ASSETS, 'static', `${name}.png`));

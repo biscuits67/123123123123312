@@ -53,8 +53,7 @@ async def no_wallet(call):
 
 async def branch(message, branch, owner_name, owner_username, owner_id, members_count, turnover):
     await message.answer_photo(
-        photo(cards.branch_info(owner_name, owner_username, owner_id,
-                                members_count, turnover, branch["percentage"])),
+        photo(cards.branch_info(members_count, turnover, branch["percentage"])),
         caption=(
             f"👑 Owner:\n• {owner_name} (@{owner_username})\n• ID: <code>{owner_id}</code>\n\n"
             f"👥 Участников: {members_count}\n💰 Оборот филиала: {round(turnover, 2)} $\n\n"

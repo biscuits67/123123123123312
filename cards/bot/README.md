@@ -14,7 +14,7 @@
 | `cards.static("payout_rejected")` | ❌ Выплата отклонена | PNG file |
 | `cards.payout_no_wallet(wallet)` | ❌ Укажите {wallet} кошелек для выплаты | drawn: wallet |
 | `cards.payout_amount(balance)` | 💸 Введите сумму выплаты ⚡️ Доступно | drawn: balance |
-| `cards.branch_info(name, username, id, members, turnover, percent)` | 👑 Owner / 👥 / 💰 / 📊 | drawn: all stats |
+| `cards.branch_info(members, turnover, percent)` | 👥 Участников / 💰 Оборот / 📊 Процент | drawn: stats |
 
 Dynamic functions return JPEG bytes (~80 ms per card) — send them with
 `BufferedInputFile(data, "emerald.jpg")`. See `example_aiogram.py`.

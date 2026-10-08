@@ -72,16 +72,12 @@
   body.has-plate p{margin-top:18px;font-size:24px}
   /* branch layout */
   body.branch .left{width:720px}
-  body.branch h1{font-size:60px;margin-top:18px}
+  body.branch h1{font-size:72px;margin-top:18px}
   body.branch .status{display:none}
   body.branch h1{margin-top:auto}
   body.branch .gemwrap{right:40px;transform:translateY(-50%) scale(.78)}
-  .owner{margin-top:26px;display:flex;flex-direction:column;gap:6px;padding:16px 22px;border-radius:18px;
-    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.10);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 34px rgba(0,0,0,.28)}
-  .owner .pl-label{display:flex;align-items:center;gap:8px}
-  .tiles{margin-top:14px;display:flex;gap:12px}
-  .tile{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-radius:18px;
+  .tiles{margin-top:34px;display:flex;gap:12px}
+  .tile{display:flex;flex-direction:column;gap:10px;padding:18px 20px;border-radius:18px;
     background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09)}
   .tile .pl-label{color:#7fa595}
 </style>
@@ -289,8 +285,8 @@
       status:"Филиал",
       title:'Информация<br><span>о филиале</span>',
       text:"",
-      extra:'<div class="owner"><span class="pl-label">Owner</span><span class="slot white" data-slot="owner_name" data-size="30" data-weight="semibold" data-sample="Алексей Emerald" style="width:560px;height:38px;line-height:38px"></span><span class="slot muted" data-slot="owner_meta" data-size="18" data-weight="medium" data-sample="@emerald_owner · ID 123456789" style="width:560px;height:24px;line-height:24px"></span></div><div class="tiles"><div class="tile"><span class="pl-label">Участники</span><span class="slot grad" data-slot="members" data-size="38" data-weight="bold" data-sample="128" style="width:150px;height:46px;line-height:46px"></span></div><div class="tile"><span class="pl-label">Оборот</span><span class="slot grad" data-slot="turnover" data-size="38" data-weight="bold" data-sample="12 345.67 $" style="width:240px;height:46px;line-height:46px"></span></div><div class="tile"><span class="pl-label">Процент</span><span class="slot grad" data-slot="percent" data-size="38" data-weight="bold" data-sample="15%" style="width:120px;height:46px;line-height:46px"></span></div></div>',
-      foot:"" }
+      extra:'<div class="tiles"><div class="tile"><span class="pl-label">Участники</span><span class="slot grad" data-slot="members" data-size="50" data-weight="bold" data-sample="128" style="width:150px;height:60px;line-height:60px"></span></div><div class="tile"><span class="pl-label">Оборот</span><span class="slot grad" data-slot="turnover" data-size="50" data-weight="bold" data-sample="12 345.67 $" style="width:270px;height:60px;line-height:60px"></span></div><div class="tile"><span class="pl-label">Процент</span><span class="slot grad" data-slot="percent" data-size="50" data-weight="bold" data-sample="15%" style="width:130px;height:60px;line-height:60px"></span></div></div>',
+      foot:"Данные на момент запроса" }
   };
   const q = new URLSearchParams(location.search);
   const k = V[q.get("v")] ? q.get("v") : "ok";
