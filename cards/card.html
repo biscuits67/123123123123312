@@ -155,6 +155,19 @@
         <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" transform="translate(0,5)" filter="url(#soft)"/>
         <path d="M172,202 L228,258 M228,202 L172,258" fill="none" stroke="#fff5f6" stroke-width="18" stroke-linecap="round"/>
       </g>
+      <g id="icon-wallet" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <g transform="translate(0,5)" opacity=".35" filter="url(#soft)"><rect x="158" y="196" width="88" height="68" rx="14" fill="#000"/></g>
+        <path d="M168,198 L222,180 Q230,178 232,186 L235,196" fill="none" stroke="#f2fff9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="158" y="196" width="88" height="68" rx="14" fill="none" stroke="#f2fff9" stroke-width="10"/>
+        <rect x="214" y="218" width="38" height="24" rx="8" fill="#f2fff9"/>
+        <circle cx="226" cy="230" r="5" fill="var(--c3)"/>
+      </g>
+      <g id="icon-star" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="#021a12" opacity=".35"/>
+        <path d="M200,186 L212,214 L242,217 L219,237 L226,267 L200,251 L174,267 L181,237 L158,217 L188,214 Z" fill="#000" opacity=".35" transform="translate(0,5)" filter="url(#soft)"/>
+        <path d="M200,186 L212,214 L242,217 L219,237 L226,267 L200,251 L174,267 L181,237 L158,217 L188,214 Z" fill="#f2fff9" stroke="#f2fff9" stroke-width="8" stroke-linejoin="round"/>
+      </g>
     </svg>
     <div class="sparkle" style="left:300px;top:-6px"></div>
     <div class="sparkle" style="left:-8px;top:120px;transform:scale(.6)"></div>
@@ -164,23 +177,31 @@
 
 <script>
   const V = {
-    ok: {
+    ok: { theme:"", icon:"ok",
       status:"Заявка принята",
       title:'Заявка<br><span>принята</span>',
       text:"Добро пожаловать в Emerald. <b>Успешной работы!</b> Меню бота уже доступно.",
-      foot:"Нет меню? Отправьте /start"
-    },
-    no: {
+      foot:"Нет меню? Отправьте /start" },
+    no: { theme:"no", icon:"no",
       status:"Заявка отклонена",
       title:'Заявка<br><span>отклонена</span>',
       text:"К сожалению, сейчас мы не можем одобрить заявку. <b>Причину уточнит администрация.</b>",
-      foot:"Контакт администрации — в сообщении ниже"
-    }
+      foot:"Контакт администрации — в сообщении ниже" },
+    wallet: { theme:"", icon:"wallet",
+      status:"Кошелёк TRX",
+      title:'Выберите<br><span>кошелёк</span>',
+      text:"Укажите кошелёк <b>TRX</b> из списка ниже — нажмите на нужный вариант.",
+      foot:"Сеть TRON · TRX" },
+    nick: { theme:"", icon:"star",
+      status:"Настройка ника",
+      title:'Новый<br><span>ник</span>',
+      text:"Введите ник, который будет отображаться <b>в&nbsp;отстуке</b>.",
+      foot:"Отправьте ник ответным сообщением" }
   };
-  const k = new URLSearchParams(location.search).get("v")==="no" ? "no" : "ok";
-  document.body.classList.add(k);
+  const k = V[new URLSearchParams(location.search).get("v")] ? new URLSearchParams(location.search).get("v") : "ok";
+  if (V[k].theme) document.body.classList.add(V[k].theme);
   for (const id of ["status","title","text","foot"]) document.getElementById(id).innerHTML = V[k][id];
-  document.getElementById("icon-"+k).style.display = "";
+  document.getElementById("icon-"+V[k].icon).style.display = "";
 </script>
 </body>
 </html>
