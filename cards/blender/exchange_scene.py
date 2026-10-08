@@ -247,6 +247,13 @@ def rigged_agent(loc, rz, style="counter", tilt=0.0, phase=0.0):
         t = np.clip(((vs - a) @ ab) / (ab @ ab), 0, 1)
         d[:, k] = np.linalg.norm(vs - (a + t[:, None] * ab), axis=1)
     w = 1.0 / (d + 0.01) ** 6
+    # keep the torso rigid when the arms move: arm bones only drive vertices outside the chest
+    ay = np.abs(vs[:, 1])
+    for k, n in enumerate(names):
+        if n.startswith(("upper.", "fore.", "hand.")):
+            w[:, k] *= np.clip((ay - 0.2) / 0.06, 0, 1)
+        elif n.startswith("shoulder."):
+            w[:, k] *= np.clip((ay - 0.12) / 0.05, 0, 1)
     keep = np.argsort(-w, axis=1)[:, :3]
     mask = np.zeros_like(w, dtype=bool)
     np.put_along_axis(mask, keep, True, axis=1)
@@ -641,10 +648,18 @@ def build():
         slit = obj("eye_slit", box_mesh("es", 0.03, 0.05, 0.17), mat("slit", (0.004, 0.003, 0.003), rough=0.8))
         slit.parent, slit.parent_type, slit.parent_bone = a2, "BONE", "head"
         slit.location = (0.098, -0.165, 0.0)
-        for ez in (-0.04, 0.04):
-            eye = obj("eye", box_mesh("ey", 0.012, 0.022, 0.03), mat("eye", (0.85, 0.85, 0.82), rough=0.05, coat=1.0))
+        eye_m = mat("eye", (0.025, 0.018, 0.014), rough=0.03, coat=1.0)      # dark wet eyes, the light only makes a glint
+        for ez in (-0.038, 0.038):
+            bm = bmesh.new()
+            bmesh.ops.create_uvsphere(bm, u_segments=16, v_segments=10, radius=0.013)
+            em_ = bpy.data.meshes.new("eye")
+            bm.to_mesh(em_)
+            bm.free()
+            for pl in em_.polygons:
+                pl.use_smooth = True
+            eye = obj("eye", em_, eye_m)
             eye.parent, eye.parent_type, eye.parent_bone = a2, "BONE", "head"
-            eye.location = (0.112, -0.165, ez)
+            eye.location = (0.1, -0.165, ez)
         if style == "count":                                    # stack of bills in the left hand
             st = obj("count_stack", box_mesh("cs", 0.16, 0.07, 0.035), bill)
             st.parent, st.parent_type, st.parent_bone = a2, "BONE", "hand.L"
