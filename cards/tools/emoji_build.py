@@ -545,6 +545,155 @@ def owner_layers():
     return layers
 
 
+# ---------------------------------------------------------------- owner variants (pick one)
+CROWN = ("M16,68 L11,35 Q17,51 22,53 Q28,51 30,27 Q37,47 41,49 Q46,47 50,15 "
+         "Q54,47 59,49 Q63,47 70,27 Q72,51 78,53 Q83,51 89,35 L84,68 Z")
+EASE = (0.45, 0, 0.55, 1)
+
+
+def _glint(t0, t1, a0=(-20, -10), a1=(90, 30), span=30, peak=0.7):
+    s_a = anim([(0, list(a0)), (t0, list(a0), (0.5, 0, 0.5, 1)), (t1, list(a1))])
+    e_a = anim([(0, [a0[0] + span, a0[1] + span]), (t0, [a0[0] + span, a0[1] + span], (0.5, 0, 0.5, 1)),
+                (t1, [a1[0] + span, a1[1] + span])])
+    return gfill([(0, "#ffffff"), (1, "#ffffff")], s_a, e_a, alpha=[(0, 0), (0.4, 0), (0.5, peak), (0.6, 0), (1, 0)])
+
+
+def _gstroke(stops, s, e, w, alpha=None):
+    g = gfill(stops, s, e, alpha=alpha)
+    g.update(ty="gs", w=prop(w), lc=2, lj=2, ml=4)
+    del g["r"]
+    return g
+
+
+def _float_layers(items_top, items, sparkles, scale=104, glow=True):
+    float_p = anim([(0, [50, 51], EASE), (OP / 2, [50, 48.5], EASE), (OP, [50, 51])])
+    tilt = anim([(0, 0, EASE), (OP / 4, -2.5, EASE), (OP * 3 / 4, 2.5, EASE), (OP, 0)])
+    size = anim([(0, [scale, scale], EASE), (OP / 2, [scale + 3, scale + 3], EASE), (OP, [scale, scale])])
+    c = THEMES["emerald"]
+    layers = [sparkle(10 + n, x, y, sz, t0) for n, (x, y, sz, t0) in enumerate(sparkles)]
+    if items_top:
+        layers.append(layer("top", items_top, 2, p=float_p, a=(50, 50), s=size, r=tilt))
+    layers.append(layer("main", items, 3, p=float_p, a=(50, 50), s=size, r=tilt))
+    layers.append(layer("shadow", [group([ellipse(50, 93, 64, 7), gfill([(0, c[2]), (1, c[4])], (50, 93), (82, 93),
+                                                                       alpha=[(0, 0.6), (1, 0)], radial=True)], "sh")], 5,
+                        s=anim([(0, [100, 100], EASE), (OP / 2, [88, 88], EASE), (OP, [100, 100])])))
+    if glow:
+        layers.append(layer("halo", [group([ellipse(0, 0, 96), gfill([(0, c[1]), (1, c[2])], (0, 0), (48, 0),
+                                                                   alpha=[(0, 0.4), (0.6, 0.12), (1, 0)], radial=True)], "h")], 6,
+                            p=(50, 50), a=(0, 0), s=anim([(0, [100, 100], EASE), (OP / 2, [112, 112], EASE), (OP, [100, 100])])))
+    return layers
+
+
+def owner_emerald():
+    """B: the crown itself is cut from emerald, trimmed with gold: gold band, gold tips."""
+    c1, c2, c3, c4, c5 = THEMES["emerald"]
+    g1, g2, g3, g4, g5 = THEMES["gold"]
+    band = "M13,66 Q50,74 87,66 L87,79 Q50,87 13,79 Z"
+    facets = ("M30,27 L33,62 M50,15 L50,66 M70,27 L67,62 M11,35 L20,64 M89,35 L80,64 "
+              "M22,53 L33,62 M41,49 L50,66 M59,49 L50,66 M78,53 L67,62")
+    it = []
+    for n, x in enumerate((30, 50, 70)):
+        y = 75.2 if x == 50 else 73.6
+        k = 1.25 if x == 50 else 0.95
+        it.append(group([ellipse(x - 1.1 * k, y - 1.2 * k, 2 * k), fill("#ffffff", 85)], f"gh{n}"))
+        it.append(group([poly(star_pts(x, y, 4.2 * k, 4.2 * k * 0.92, n=4)), gfill([(0, c1), (0.5, c2), (1, c4)],
+                                                                                 (x - 3, y - 3), (x + 3, y + 3))], f"g{n}"))
+        it.append(group([ellipse(x, y, 11 * k), gfill([(0, g1), (1, g4)], (x - 4, y - 4), (x + 4, y + 4))], f"set{n}"))
+    it.append(group(path("M14,66.6 Q50,74.4 86,66.6") + [stroke("#ffffff", 1, 65)], "band-light"))
+    it.append(group(path(band) + [_glint(40, 85)], "band-glint"))
+    it.append(group(path(band) + [gfill([(0, g1), (0.35, g2), (0.7, g3), (1, g4)], (50, 67), (50, 84))], "band"))
+    it.append(group(path(CROWN) + [_glint(100, 150, peak=0.8)], "glint"))
+    it.append(group(path(facets) + [stroke("#ffffff", 0.9, 30)], "facets"))
+    it.append(group(path(CROWN) + [stroke(g2, 2.2)], "rim"))
+    it.append(group(path("M50,15 L41,49 Q46,47 50,15 Z M30,27 L22,53 Q28,51 30,27 Z") + [fill("#ffffff", 22)], "light"))
+    it.append(group(path(CROWN) + [gfill([(0, c1), (0.4, c2), (0.8, c3), (1, c4)], (35, 15), (65, 70))], "body"))
+    it.append(group(path(CROWN) + [fill(c5)], "depth", p=(0, 2.2)))
+    it.append(group(path(band) + [fill(g5)], "band-depth", p=(0, 2.2)))
+    top = []
+    for n, (x, y) in enumerate(((11, 35), (30, 27), (50, 15), (70, 27), (89, 35))):
+        r = 7 if x == 50 else 5.6
+        top.append(group([ellipse(x - 1, y - 1.4, r * 0.3), fill("#ffffff", 90)], f"th{n}"))
+        top.append(group([ellipse(x, y - 1, r), gfill([(0, g1), (1, g3)], (x - 2.5, y - 3.5), (x + 2.5, y + 1.5))], f"tip{n}"))
+    return _float_layers(top, it, [(62, 8, 7, 20), (90, 20, 5, 70), (8, 22, 5, 115), (40, 58, 6, 140)])
+
+
+def owner_crowned_gem():
+    """C: the brand emerald with a small gold crown resting on top of it."""
+    c = THEMES["emerald"]
+    g1, g2, g3, g4, g5 = THEMES["gold"]
+    stone = group(gem_shapes(c, 100), "stone", p=(50, 66), a=(50, 50), s=(60, 60))
+    crown = []
+    for n, (x, y) in enumerate(((11, 35), (30, 27), (50, 15), (70, 27), (89, 35))):
+        crown.append(group([ellipse(x, y - 1, 6.5), gfill([(0, "#ffffff"), (1, "#cfe9dc")], (x - 2, y - 3), (x + 2, y + 1))], f"p{n}"))
+    crown.append(group(path(CROWN) + [_glint(30, 70)], "glint"))
+    crown.append(group(path(CROWN) + [gfill([(0, g1), (0.35, g2), (0.75, g3), (1, g4)], (40, 15), (60, 70))], "body"))
+    crown.append(group(path(CROWN) + [fill(g5)], "depth", p=(0, 3)))
+    hop = anim([(0, [53, 35], EASE), (18, [53, 35], (0.3, 0, 0.7, 1)), (32, [53, 28], (0.5, 0, 0.6, 1)), (46, [53, 35]),
+                (54, [53, 33.5], EASE), (62, [53, 35]), (OP, [53, 35])])
+    rot = anim([(0, -10, EASE), (18, -10, (0.3, 0, 0.7, 1)), (32, 4, (0.5, 0, 0.6, 1)), (46, -12, EASE), (62, -10), (OP, -10)])
+    layers = [sparkle(10 + n, x, y, sz, t0) for n, (x, y, sz, t0) in
+              enumerate([(86, 34, 7, 40), (14, 50, 5, 90), (84, 88, 5, 130), (20, 14, 5, 10)])]
+    layers.append(layer("crown", [group(crown, "crown", a=(50, 68), s=(56, 56))], 2, p=hop, a=(0, 0), r=rot))
+    layers.append(layer("stone", [stone], 3, s=anim([(0, [100, 100], EASE), (OP / 2, [97, 97], EASE), (OP, [100, 100])])))
+    return layers
+
+
+def owner_minimal():
+    """D: clean monoline crown in polished gold with one emerald — calm and modern."""
+    c1, c2, c3, c4, c5 = THEMES["emerald"]
+    g1, g2, g3, g4, g5 = THEMES["gold"]
+    line = "M20,66 L15,32 L33,48 L50,22 L67,48 L85,32 L80,66 Z"
+    base = "M20,78 H80"
+    stops = [(0, g1), (0.45, g2), (1, g3)]
+    it = []
+    gem = star_pts(50, 54, 7.5, 7.5 * 0.92, n=4)
+    it.append(group([ellipse(47.6, 51.5, 3), fill("#ffffff", 85)], "gem-hl"))
+    it.append(group([poly(gem), _glint(110, 150, (40, 44), (60, 64), 8, 0.9)], "gem-glint"))
+    it.append(group([poly(gem), gfill([(0, c1), (0.5, c2), (1, c4)], (44, 48), (56, 60))], "gem"))
+    for n, (x, y) in enumerate(((15, 32), (50, 22), (85, 32))):
+        it.append(group([ellipse(x, y, 7), gfill([(0, g1), (1, g3)], (x - 3, y - 3), (x + 3, y + 3))], f"dot{n}", p=(0, -5.5)))
+    for d in (line, base):
+        it.append(group(path(d) + [_gstroke([(0, "#ffffff"), (1, "#ffffff")],
+                                            anim([(0, [-30, -30]), (30, [-30, -30], (0.5, 0, 0.5, 1)), (75, [70, 70])]),
+                                            anim([(0, [0, 0]), (30, [0, 0], (0.5, 0, 0.5, 1)), (75, [100, 100])]), 7,
+                                            alpha=[(0, 0), (0.4, 0), (0.5, 0.85), (0.6, 0), (1, 0)])], "glint"))
+        it.append(group(path(d) + [_gstroke(stops, (30, 20), (70, 80), 7)], "line"))
+        it.append(group(path(d) + [stroke(g5, 7)], "depth", p=(0, 2)))
+    return _float_layers([], it, [(78, 12, 6, 30), (12, 60, 4.5, 90), (90, 70, 4.5, 140)], scale=100)
+
+
+def owner_crystals():
+    """E: a crown of three emerald crystals rising from a gold base."""
+    c1, c2, c3, c4, c5 = THEMES["emerald"]
+    g1, g2, g3, g4, g5 = THEMES["gold"]
+    it = []
+    for n, (x, top, w) in enumerate(((31, 30, 15), (50, 12, 19), (69, 30, 15))):
+        h = w / 2
+        bot = 68
+        tip = [(x, top), (x - h, top + h * 1.2), (x, top + h * 1.9), (x + h, top + h * 1.2)]
+        t0 = 40 + n * 14
+        outline = [(x, top), (x - h, top + h * 1.2), (x - h, bot), (x, bot + 2), (x + h, bot), (x + h, top + h * 1.2)]
+        it.append(group([poly(outline), _glint(t0, t0 + 30, (x - 30, top - 10), (x + 12, top + 40), 18, 0.75)], f"glint{n}"))
+        it.append(group([poly([(x, top + h * 1.9), (x, bot + 2)], False), stroke("#ffffff", 0.8, 35)], f"ridge{n}"))
+        it.append(group([poly(tip), gfill([(0, "#ffffff"), (1, c1)], (x - h, top), (x + h, top + h * 2))], f"tip{n}"))
+        it.append(group([poly([(x, top + h * 1.9), (x - h, top + h * 1.2), (x - h, bot), (x, bot + 2)]),
+                         gfill([(0, c1), (1, c3)], (x - h, top), (x, bot))], f"l{n}"))
+        it.append(group([poly([(x, top + h * 1.9), (x + h, top + h * 1.2), (x + h, bot), (x, bot + 2)]),
+                         gfill([(0, c2), (1, c5)], (x, top), (x + h, bot))], f"r{n}"))
+    band = "M16,64 Q50,70 84,64 L84,78 Q50,85 16,78 Z"
+    it = [group(path("M17,64.6 Q50,70.4 83,64.6") + [stroke("#ffffff", 1, 70)], "band-light"),
+          group(path(band) + [_glint(90, 130)], "band-glint"),
+          group([poly(star_pts(50, 73.5, 4.5, 4.5 * 0.92, n=4)), gfill([(0, c1), (1, c4)], (46, 70), (54, 77))], "stone"),
+          group([ellipse(50, 73.5, 12), gfill([(0, g1), (1, g4)], (45, 68), (55, 79))], "set"),
+          group(path(band) + [gfill([(0, g1), (0.35, g2), (0.7, g3), (1, g4)], (50, 64), (50, 82))], "band")] + it
+    it.append(group(path(band) + [fill(g5)], "band-depth", p=(0, 2.2)))
+    return _float_layers([], it, [(50, 4, 6, 40), (84, 30, 5, 80), (14, 34, 5, 120), (88, 70, 4, 150)])
+
+
+OWNER_VARIANTS = {"a_royal": owner_layers, "b_emerald": owner_emerald, "c_crowned_gem": owner_crowned_gem,
+                  "d_minimal": owner_minimal, "e_crystals": owner_crystals}
+
+
 # name: (fallback emoji, theme, icon, shine frame)
 EMOJI = {
     "gem":       ("💎", "emerald", icon_gem, 40),
@@ -599,6 +748,16 @@ def build(name):
 
 
 def main():
+    if sys.argv[1:] == ["--owner-variants"]:      # previews to choose the owner crown from
+        out = os.path.join(DIR, "owner_variants")
+        os.makedirs(out, exist_ok=True)
+        for key, fn in OWNER_VARIANTS.items():
+            data = {"tgs": 1, "v": "5.5.2", "fr": FR, "ip": 0, "op": OP, "w": 100, "h": 100, "nm": f"owner_{key}",
+                    "ddd": 0, "assets": [], "layers": fn()}
+            with open(os.path.join(out, f"owner_{key}.tgs"), "wb") as f:
+                f.write(gzip.compress(json.dumps(data, separators=(",", ":")).encode(), 9, mtime=0))
+            print(key)
+        return
     names = sys.argv[1:] or list(EMOJI)
     os.makedirs(OUT, exist_ok=True)
     # pack order + fallback emoji, read by upload_pack.py and emoji.py
