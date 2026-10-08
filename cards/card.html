@@ -188,6 +188,13 @@
         <circle cx="200" cy="230" r="46" fill="none" stroke="#f2fff9" stroke-width="10"/>
         <text x="200" y="254" text-anchor="middle" font-family="Inter Display,Inter,sans-serif" font-weight="800" font-size="66" fill="#f2fff9">$</text>
       </g>
+      <g id="icon-crown" style="display:none">
+        <circle cx="200" cy="230" r="72" fill="var(--c5)" opacity=".45"/>
+        <path d="M158,256 L150,204 L180,226 L200,190 L220,226 L250,204 L242,256 Z" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,5)" filter="url(#soft)"/>
+        <path d="M158,256 L150,204 L180,226 L200,190 L220,226 L250,204 L242,256 Z" fill="#f2fff9" stroke="#f2fff9" stroke-width="10" stroke-linejoin="round"/>
+        <rect x="156" y="262" width="88" height="10" rx="5" fill="#f2fff9"/>
+        <circle cx="200" cy="236" r="7" fill="var(--c3)"/>
+      </g>
     </svg>
     <div class="sparkle" style="left:300px;top:-6px"></div>
     <div class="sparkle" style="left:-8px;top:120px;transform:scale(.6)"></div>
@@ -246,7 +253,12 @@
       status:"Выплата",
       title:'Сумма<br><span>выплаты</span>',
       text:"Введите сумму выплаты. <b>Доступный баланс</b>&nbsp;— в сообщении ниже.",
-      foot:"Отправьте сумму ответным сообщением" }
+      foot:"Отправьте сумму ответным сообщением" },
+    branch: { theme:"", icon:"crown",
+      status:"Филиал",
+      title:'Информация<br><span>о филиале</span>',
+      text:"Владелец, участники, <b>оборот и процент</b> филиала&nbsp;— в сообщении ниже.",
+      foot:"Owner · Участники · Оборот · Процент" }
   };
   const k = V[new URLSearchParams(location.search).get("v")] ? new URLSearchParams(location.search).get("v") : "ok";
   if (V[k].theme) document.body.classList.add(V[k].theme);
