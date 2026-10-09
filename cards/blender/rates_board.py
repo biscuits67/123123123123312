@@ -17,8 +17,8 @@ cols = (80, 1150, 1650, 2320)
 hdr = font("Inter-Medium.otf", 44)
 for x, t, a in zip(cols, ("PAIR", "BUY", "SELL", "24H"), ("la", "ra", "ra", "ra")):
     d.text((x if a == "la" else x, 240), t, font=hdr, fill=GREY, anchor=a)
-rows = [("USDT / RUB", "92.40", "93.10", "+0.4%"), ("BTC / USDT", "64 210", "64 480", "+2.1%"),
-        ("ETH / USDT", "3 120", "3 138", "+1.3%"), ("TON / USDT", "5.42", "5.49", "−0.6%")]
+rows = [("BTC / USDT", "64 210", "64 480", "+2.1%"), ("ETH / USDT", "3 120", "3 138", "+1.3%"),
+        ("SOL / USDT", "148.6", "149.4", "+3.2%"), ("TON / USDT", "5.42", "5.49", "−0.6%")]
 big, mono = font("Inter-Bold.otf", 84), font("Inter-SemiBold.otf", 84)
 for i, (p, b, s, ch) in enumerate(rows):
     y = 330 + i * 160
