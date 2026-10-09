@@ -42,7 +42,11 @@ arm = next(o for o in objs if o.type == "ARMATURE")
 arm.name = arm.data.name = "Hero_Rig"
 action = arm.animation_data.action
 action.name = "Hero_Idle"
+f0, f1 = (int(x) for x in action.frame_range)
 arm.animation_data.action = None
+for pb in arm.pose.bones:  # the import leaves the idle's first frame on the bones: start from the rest pose
+    pb.matrix_basis.identity()
+bpy.context.view_layer.update()
 surf = bpy.data.objects["Alpha_Surface"]
 joints = bpy.data.objects["Alpha_Joints"]
 A = arm.matrix_world.copy()
@@ -53,7 +57,7 @@ def bone_head(name):
     return A @ arm.data.bones[P + name].head_local
 
 
-# fit pose (on top of the idle's first frame, which the import leaves on the bones): arms hang into the sleeves, legs open slightly into the trouser legs
+# fit pose: upright rest pose with the arms hanging into the sleeves, legs open slightly into the trouser legs
 CUFF = {"Left": Vector((0.262, -0.02, 0.93)), "Right": Vector((-0.258, -0.02, 0.945))}
 for side in ("Left", "Right"):
     pb = arm.pose.bones[P + side + "Arm"]
@@ -65,8 +69,6 @@ for side in ("Left", "Right"):
     bpy.context.view_layer.update()
     sgn = 1 if side == "Left" else -1
     leg = arm.pose.bones[P + side + "UpLeg"]
-    leg.rotation_mode = "XYZ"
-    bpy.context.view_layer.update()
     head = bone_head(side + "UpLeg")
     rot = Matrix.Rotation(math.radians(2.2) * sgn, 4, "Y")
     leg.matrix = Ainv @ (Matrix.Translation(head) @ rot @ Matrix.Translation(-head) @ (A @ arm.data.bones[P + side + "UpLeg"].matrix_local))
@@ -347,15 +349,19 @@ R = np.array(Matrix.Rotation(math.radians(-90), 3, "Z") @ Matrix.Rotation(math.r
 sp = sp @ R.T
 sp -= [(sp[:, 0].max() + sp[:, 0].min()) / 2, (sp[:, 1].max() + sp[:, 1].min()) / 2, sp[:, 2].min()]
 sp *= 0.31 / (sp[:, 1].max() - sp[:, 1].min())
-foot = {s: arm.pose.bones[P + s + "Foot"] for s in ("Left", "Right")}
+sole_z = bco[np.array([("Foot" in n or "Toe" in n) for n in dominant])][:, 2].min()
 shoes = []
 for side, sgn in (("Left", 1), ("Right", -1)):
     ob = shoe if side == "Left" else bpy.data.objects.new("shoe", shoe.data.copy())
     if ob is not shoe:
         scn.collection.objects.link(ob)
     ob.name = f"Hero_Shoe_{side}"
-    ankle = A @ foot[side].head
-    pts = sp * [sgn, 1, 1] + [ankle[0] + 0.004 * sgn, ankle[1] - 0.085, 0.0]
+    # collar of the shoe right under the trouser hem, sole on the posed Y Bot sole
+    leg = pp[(pp[:, 0] * sgn > 0) & (pp[:, 2] < 0.4)]
+    hem = leg[leg[:, 2] < leg[:, 2].min() + 0.02][:, :2].mean(0)
+    pts = sp * [sgn, 1, 1]
+    collar = pts[pts[:, 2] > pts[:, 2].max() - 0.03][:, :2].mean(0)
+    pts += [hem[0] - collar[0], hem[1] - collar[1] - 0.012, max(sole_z, 0.0) - 0.006]
     set_points(ob, pts)
     if sgn < 0:
         bm = bmesh.new()
@@ -378,7 +384,7 @@ eye_skin = material("Skin", (0.035, 0.022, 0.017), 0.5)  # skin deep in the slit
 
 
 def keep_part(n, co):
-    if "Hand" in n or n.endswith(("Head", "HeadTop_End", "Neck")):
+    if "Hand" in n:
         return True
     if "ForeArm" in n:  # long cuff of the glove so no gap shows under the sleeve
         side = "Left" if "Left" in n else "Right"
@@ -422,14 +428,47 @@ for ob in (surf, joints):
             poly.material_index = 2  # eye slit of the balaclava
     ob.name = "Hero_Hands_Head" if ob is surf else "Hero_Joints"
 
-# eyes: glossy dark spheres in the slit, rigid on the head; they catch the neon in the hood's shadow
+# balaclava: a smooth knit head (the Y Bot head is a faceted robot mask) with an eye slit,
+# and two glossy eyes that catch the neon in the hood's shadow; all rigid on the head bone
+HC = Vector((0.0, -0.012, 1.685))
+me = bpy.data.meshes.new("balaclava")
+bm = bmesh.new()
+bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=32, radius=1.0)
+for v in bm.verts:
+    x, y, z = v.co
+    z *= 1.0 if z > 0 else 0.9          # rounder crown, slightly shorter jaw
+    y *= 1.0 if y < 0 else 0.92         # flatter back of the head
+    v.co = HC + Vector((x * 0.07, y * 0.095, z * 0.115))
+# neck: pull the lowest rings into a column that disappears into the hoodie
+for v in bm.verts:
+    if v.co.z < HC.z - 0.07:
+        k = min(1.0, (HC.z - 0.07 - v.co.z) / 0.04)
+        v.co.x *= 1 - 0.35 * k
+        v.co.y = HC.y + (v.co.y - HC.y) * (1 - 0.3 * k) + 0.012 * k
+        v.co.z -= 0.05 * k
+bm.to_mesh(me)
+bm.free()
+head = bpy.data.objects.new("Hero_Balaclava", me)
+scn.collection.objects.link(head)
+head.data.materials.append(mask)
+head.data.materials.append(eye_skin)
+for poly in me.polygons:
+    c = poly.center
+    if abs(c.z - 1.70) < 0.0125 and c.y < HC.y - 0.06 and abs(c.x) < 0.048:
+        poly.material_index = 1
+        for vi in poly.vertices:  # recess the slit a little
+            me.vertices[vi].co.y += 0.004
+W = np.zeros((len(me.vertices), len(bones)), np.float32)
+W[:, bidx[P + "Head"]] = 1
+bind(head, W)  # head and neck are not posed in the fit pose: rest space == fit space here
 eye_mat = material("Eyes", (0.015, 0.012, 0.01), 0.04)
-eyes = []
-for sx in (-0.029, 0.029):
+eyes = [head]
+for sx in (-0.028, 0.028):
+    front = HC.y - 0.095 * math.sqrt(max(0.0, 1 - (sx / 0.07) ** 2 - ((1.70 - HC.z) / 0.115) ** 2))
     me = bpy.data.meshes.new("eye")
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=0.0105,
-                              matrix=Matrix.Translation((sx, -0.107, 1.695)))
+                              matrix=Matrix.Translation((sx, front + 0.009, 1.70)))
     bm.to_mesh(me)
     bm.free()
     e = bpy.data.objects.new("Hero_Eye_L" if sx > 0 else "Hero_Eye_R", me)
@@ -437,14 +476,13 @@ for sx in (-0.029, 0.029):
     e.data.materials.append(eye_mat)
     W = np.zeros((len(me.vertices), len(bones)), np.float32)
     W[:, bidx[P + "Head"]] = 1
-    bind(e, W)  # built straight in rest space (the fit pose also carries the idle's head turn)
+    bind(e, W)
     eyes.append(e)
 
 # ---------------------------------------------------------------- finish: rest pose + idle loop
 for pb in arm.pose.bones:
     pb.matrix_basis.identity()
 arm.animation_data.action = action
-f0, f1 = (int(x) for x in action.frame_range)
 scn.frame_start, scn.frame_end = f0, f1
 scn.render.fps = 24
 col = bpy.data.collections.new("Hero")
