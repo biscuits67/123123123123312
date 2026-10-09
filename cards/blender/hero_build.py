@@ -507,12 +507,99 @@ for sx in (-0.026, 0.026):
 # ---------------------------------------------------------------- finish: rest pose + idle loop
 for pb in arm.pose.bones:
     pb.matrix_basis.identity()
+bpy.context.view_layer.update()
+
+
+def aim(name, y_dir, z_hint):
+    """Pose a bone (torso at rest) so its Y axis points along y_dir with its palm axis (+Z) towards z_hint;
+    returns the local rotation, which then rides on whatever the idle does with the shoulder and spine."""
+    pb = arm.pose.bones[P + name]
+    y = Vector(y_dir).normalized()
+    z = (Vector(z_hint) - y * Vector(z_hint).dot(y)).normalized()
+    rot = Matrix((y.cross(z), y, z)).transposed()  # columns X, Y, Z
+    head = A @ pb.head
+    pb.matrix = Ainv @ (Matrix.Translation(head) @ rot.to_4x4()) @ Matrix.Scale(100, 4)
+    bpy.context.view_layer.update()
+    return pb.rotation_quaternion.copy()
+
+
+def hold_pose(lift):
+    """Right forearm out at the side, palm up; lift (0..1) raises the forearm a little."""
+    up = math.radians(14) * lift
+    d1 = Vector((-0.2, -0.16 - 0.1 * lift, -0.97)).normalized()          # elbow stays by the side
+    d2 = Vector((-0.42, -0.86 * math.cos(up), 0.12 + 0.86 * math.sin(up))).normalized()  # forward and out
+    d3 = Vector((d2.x, d2.y, -0.06)).normalized()  # flat open palm whatever the lift
+    q = [aim("RightArm", d1, (0.6, 0, -0.8)),
+         aim("RightForeArm", d2, (0.35, 0, 0.94)),   # twist split between forearm and wrist
+         aim("RightHand", d3, (0, 0, 1))]
+    for n in ("RightArm", "RightForeArm", "RightHand"):
+        arm.pose.bones[P + n].matrix_basis.identity()
+    return q
+
+
+# armature scale is 0.01 and pb.matrix is in armature space: undo it in aim() via Scale(100)
+q_low, q_high = hold_pose(0.0), hold_pose(1.0)
+LOOP = f1 - f0  # the Mixamo idle closes on itself: frame f1 == frame f0
 arm.animation_data.action = action
-scn.frame_start, scn.frame_end = f0, f1
+for f in range(f0, f1 + 1):
+    w = 0.5 - 0.5 * math.cos(2 * math.pi * (f - f0) * 2 / LOOP)  # two gentle lifts per loop
+    for n, a_, b_ in zip(("RightArm", "RightForeArm", "RightHand"), q_low, q_high):
+        pb = arm.pose.bones[P + n]
+        pb.rotation_quaternion = a_.slerp(b_, w)
+        pb.keyframe_insert("rotation_quaternion", frame=f)
+# open, relaxed fingers on the holding hand: drop the idle's finger curl (rest pose = straight fingers)
+bag = action.layers[0].strips[0].channelbag(arm.animation_data.action_slot)
+for fc in list(bag.fcurves):
+    if f'"{P}RightHand' in fc.data_path and f'"{P}RightHand"' not in fc.data_path:
+        bag.fcurves.remove(fc)
+for pb in arm.pose.bones:
+    if pb.name.startswith(P + "RightHand") and pb.name != P + "RightHand":
+        pb.matrix_basis = Matrix.Rotation(math.radians(8), 4, "X")  # a hint of curl
+scn.frame_start, scn.frame_end = f0, f1 - 1  # 420 frames; frame f1 would repeat frame f0
+
+# ---------------------------------------------------------------- levitating emerald over the palm
+me = bpy.data.meshes.new("emerald")
+bm = bmesh.new()
+bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.035, radius2=0.035, depth=0.03)
+for sign in (1, -1):  # step-cut crown and pavilion: inset, lift, taper
+    cap = [f for f in bm.faces if len(f.verts) == 8 and f.normal.z * sign > 0.9][0]
+    bmesh.ops.inset_individual(bm, faces=[cap], thickness=0.01)
+    ext = bmesh.ops.extrude_face_region(bm, geom=[cap])
+    verts = [v for v in ext["geom"] if isinstance(v, bmesh.types.BMVert)]
+    bmesh.ops.translate(bm, verts=verts, vec=(0, 0, 0.008 * sign))
+    c = sum((v.co for v in verts), Vector()) / len(verts)
+    bmesh.ops.scale(bm, verts=verts, vec=(0.6, 0.6, 1), space=Matrix.Translation(-c))
+bmesh.ops.rotate(bm, verts=bm.verts, matrix=Matrix.Rotation(math.radians(90), 3, "X"))  # table faces the viewer
+bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+bm.to_mesh(me)
+bm.free()
+gem = bpy.data.objects.new("Hero_Emerald", me)
+scn.collection.objects.link(gem)
+gm = material("Emerald", (0.043, 0.56, 0.31), 0.02)
+b = gm.node_tree.nodes["Principled BSDF"]
+b.inputs["IOR"].default_value = 1.58
+b.inputs["Transmission Weight"].default_value = 1.0
+b.inputs["Emission Color"].default_value = (0.1, 0.77, 0.54, 1)
+b.inputs["Emission Strength"].default_value = 0.3
+gem.data.materials.append(gm)
+glow = bpy.data.objects.new("Hero_Emerald_Glow", bpy.data.lights.new("Hero_Emerald_Glow", "POINT"))
+glow.data.energy, glow.data.color, glow.data.shadow_soft_size = 12, (0.15, 1.0, 0.55), 0.02
+scn.collection.objects.link(glow)
+for ob in (gem, glow):
+    c = ob.constraints.new("COPY_LOCATION")
+    c.target, c.subtarget, c.head_tail, c.use_offset = arm, P + "RightHand", 0.6, True
+    # loop-safe motion (simple expressions, no Python needed): 4 bobs and 2 turns per 420-frame loop
+    d = ob.driver_add("location", 2).driver
+    d.type, d.expression = "SCRIPTED", "0.09 + 0.012*sin((frame-1)*0.0598399)"
+gem.rotation_euler = (0, 0, 0)
+gem.scale = (1.4, 1.4, 1.4)  # reads better in the wide shot
+d = gem.driver_add("rotation_euler", 2).driver
+d.type, d.expression = "SCRIPTED", "(frame-1)*0.0299199"
+
 scn.render.fps = 24
 col = bpy.data.collections.new("Hero")
 scn.collection.children.link(col)
-for ob in [arm, hoodie, pants, surf, joints, *shoes, *eyes]:
+for ob in [arm, hoodie, pants, surf, joints, *shoes, *eyes, gem, glow]:
     for c in list(ob.users_collection):
         c.objects.unlink(ob)
     col.objects.link(ob)
