@@ -275,6 +275,12 @@ kd.balance()
 seam = [(i, j) for i, p in enumerate(hp) for (_, j, d) in kd.find_range(p, 0.004) if j > i]
 edges = np.vstack([mesh_edges(hoodie), np.array(seam).reshape(-1, 2)])
 hW = smooth(hW, edges, 25)
+# the hood turns with the head (otherwise the head swings into the fabric): ramp in the head bone
+hood = (hp[:, 2] > 1.5) & (np.abs(hp[:, 0]) < 0.2)
+ramp = np.clip((hp[:, 2] - 1.53) / 0.12, 0, 1) ** 1.2 * 0.9 * hood
+hW *= (1 - ramp)[:, None]
+hW[:, bidx[P + "Head"]] += ramp
+hW = smooth(hW, edges, 6)
 set_points(hoodie, unskin(hp, hW))
 bind(hoodie, hW)
 hoodie.data.materials.clear()
@@ -438,7 +444,7 @@ bm = bmesh.new()
 bm.from_mesh(bal.data)
 bm.transform(bal.matrix_world)
 lo, hi = (np.array([v.co[:] for v in bm.verts]).min(0), np.array([v.co[:] for v in bm.verts]).max(0))
-k = 0.152 / (hi[0] - lo[0])
+k = 0.146 / (hi[0] - lo[0])
 bmesh.ops.transform(bm, verts=bm.verts, matrix=Matrix.Scale(k, 4))
 lo, hi = lo * k, hi * k
 top = 1.81
