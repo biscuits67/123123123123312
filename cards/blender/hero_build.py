@@ -9,7 +9,8 @@ into the rig's rest pose (inverse linear blend skinning). After that they follow
 animation of the same skeleton. The body is kept only where it shows: gloved hands and a
 balaclava head.
 
-    blender -b -P hero_build.py -- IDLE.fbx HOODIE.fbx HOODIE_TEX.png PANTS.fbx PANTS_TEX_DIR SHOE.obj OUT.blend
+    blender -b -P hero_build.py -- IDLE.fbx HOODIE.fbx HOODIE_TEX.png PANTS.fbx PANTS_TEX_DIR SHOE.obj \
+        BALACLAVA.fbx BALACLAVA_TEX.jpg OUT.blend
 """
 import math
 import os
@@ -22,7 +23,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from mathutils.kdtree import KDTree
 
-IDLE, HOODIE, HOODIE_TEX, PANTS, PANTS_TEX, SHOE, OUT = sys.argv[sys.argv.index("--") + 1:]
+IDLE, HOODIE, HOODIE_TEX, PANTS, PANTS_TEX, SHOE, BALA, BALA_TEX, OUT = sys.argv[sys.argv.index("--") + 1:]
 P = "mixamorig:"
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -380,7 +381,7 @@ for side, sgn in (("Left", 1), ("Right", -1)):
 # ---------------------------------------------------------------- body: gloves + balaclava
 glove = material("Gloves", (0.012, 0.012, 0.013), 0.55, sheen=0.4)
 mask = material("Balaclava", (0.01, 0.01, 0.011), 0.9, sheen=0.6)
-eye_skin = material("Skin", (0.035, 0.022, 0.017), 0.5)  # skin deep in the slit, barely lit
+eye_skin = material("Skin", (0.11, 0.072, 0.054), 0.5, sheen=0.1)
 
 
 def keep_part(n, co):
@@ -428,47 +429,65 @@ for ob in (surf, joints):
             poly.material_index = 2  # eye slit of the balaclava
     ob.name = "Hero_Hands_Head" if ob is surf else "Hero_Joints"
 
-# balaclava: a smooth knit head (the Y Bot head is a faceted robot mask) with an eye slit,
-# and two glossy eyes that catch the neon in the hood's shadow; all rigid on the head bone
-HC = Vector((0.0, -0.012, 1.685))
-me = bpy.data.meshes.new("balaclava")
+# balaclava (Genesis 8 knit mask) scaled into the hood, with a face behind the eye opening
+bal = next(o for o in imported(lambda: bpy.ops.import_scene.fbx(filepath=BALA)) if o.type == "MESH")
+bal.name = "Hero_Balaclava"
+for m in list(bal.modifiers):
+    bal.modifiers.remove(m)
 bm = bmesh.new()
-bmesh.ops.create_uvsphere(bm, u_segments=48, v_segments=32, radius=1.0)
+bm.from_mesh(bal.data)
+bm.transform(bal.matrix_world)
+lo, hi = (np.array([v.co[:] for v in bm.verts]).min(0), np.array([v.co[:] for v in bm.verts]).max(0))
+k = 0.152 / (hi[0] - lo[0])
+bmesh.ops.transform(bm, verts=bm.verts, matrix=Matrix.Scale(k, 4))
+lo, hi = lo * k, hi * k
+top = 1.81
+shift = Vector((-(lo[0] + hi[0]) / 2, -0.02 - (lo[1] + hi[1]) / 2, top - hi[2]))
+bmesh.ops.translate(bm, verts=bm.verts, vec=shift)
+rim = [v.co.copy() for e in bm.edges if e.is_boundary for v in e.verts]
+zmin = min(v.co.z for v in bm.verts)
+hole = sum((c for c in rim if c.z > zmin + 0.06), Vector()) / max(1, len([c for c in rim if c.z > zmin + 0.06]))
+bm.to_mesh(bal.data)
+bm.free()
+bal.parent = None
+bal.matrix_world = Matrix.Identity(4)
+for ob in [o for o in bpy.data.objects if o.type == "ARMATURE" and o is not arm]:
+    bpy.data.objects.remove(ob)
+knit = material("Balaclava", (0.012, 0.012, 0.013), 0.9, sheen=0.45, tex=BALA_TEX)
+bal.data.materials.clear()
+bal.data.materials.append(knit)
+for p in bal.data.polygons:
+    p.material_index = 0
+co = world_points(bal)
+W = np.zeros((len(co), len(bones)), np.float32)
+t = np.clip((co[:, 2] - 1.6) / 0.05, 0, 1)  # neck tube follows the neck, the rest the head
+W[:, bidx[P + "Head"]] = t
+W[:, bidx[P + "Neck"]] = 1 - t
+bind(bal, W)
+
+# face behind the opening: closed dark skin, rigid on the head
+C = Vector((0.0, hole.y + 0.006 + 0.08, hole.z - 0.012))
+me = bpy.data.meshes.new("face")
+bm = bmesh.new()
+bmesh.ops.create_uvsphere(bm, u_segments=40, v_segments=24, radius=1.0)
 for v in bm.verts:
-    x, y, z = v.co
-    z *= 1.0 if z > 0 else 0.9          # rounder crown, slightly shorter jaw
-    y *= 1.0 if y < 0 else 0.92         # flatter back of the head
-    v.co = HC + Vector((x * 0.07, y * 0.095, z * 0.115))
-# neck: pull the lowest rings into a column that disappears into the hoodie
-for v in bm.verts:
-    if v.co.z < HC.z - 0.07:
-        k = min(1.0, (HC.z - 0.07 - v.co.z) / 0.04)
-        v.co.x *= 1 - 0.35 * k
-        v.co.y = HC.y + (v.co.y - HC.y) * (1 - 0.3 * k) + 0.012 * k
-        v.co.z -= 0.05 * k
+    v.co = C + Vector((v.co.x * 0.062, v.co.y * 0.08, v.co.z * 0.095))
 bm.to_mesh(me)
 bm.free()
-head = bpy.data.objects.new("Hero_Balaclava", me)
+head = bpy.data.objects.new("Hero_Face", me)
 scn.collection.objects.link(head)
-head.data.materials.append(mask)
 head.data.materials.append(eye_skin)
-for poly in me.polygons:
-    c = poly.center
-    if abs(c.z - 1.70) < 0.0125 and c.y < HC.y - 0.06 and abs(c.x) < 0.048:
-        poly.material_index = 1
-        for vi in poly.vertices:  # recess the slit a little
-            me.vertices[vi].co.y += 0.004
 W = np.zeros((len(me.vertices), len(bones)), np.float32)
 W[:, bidx[P + "Head"]] = 1
 bind(head, W)  # head and neck are not posed in the fit pose: rest space == fit space here
 eye_mat = material("Eyes", (0.015, 0.012, 0.01), 0.04)
-eyes = [head]
-for sx in (-0.028, 0.028):
-    front = HC.y - 0.095 * math.sqrt(max(0.0, 1 - (sx / 0.07) ** 2 - ((1.70 - HC.z) / 0.115) ** 2))
+eyes = [bal, head]
+for sx in (-0.026, 0.026):
+    front = C.y - 0.08 * math.sqrt(max(0.0, 1 - (sx / 0.062) ** 2 - ((hole.z - C.z) / 0.095) ** 2))
     me = bpy.data.meshes.new("eye")
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=0.0105,
-                              matrix=Matrix.Translation((sx, front + 0.009, 1.70)))
+    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=12, radius=0.0095,
+                              matrix=Matrix.Translation((sx, front + 0.006, hole.z)))
     bm.to_mesh(me)
     bm.free()
     e = bpy.data.objects.new("Hero_Eye_L" if sx > 0 else "Hero_Eye_R", me)
