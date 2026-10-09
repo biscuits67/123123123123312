@@ -795,7 +795,12 @@ def main():
     sc = build()
     os.makedirs(OUT, exist_ok=True)
     if mode == "save":
-        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(HERE, "exchange_scene.blend"))
+        for im in list(bpy.data.images):                          # drop references to textures missing from the downloads
+            if im.source == "FILE" and not im.packed_file and not os.path.exists(bpy.path.abspath(im.filepath)):
+                bpy.data.images.remove(im)
+        bpy.ops.file.pack_all()                                   # one self-contained file: textures inside
+        sc.cycles.device, sc.cycles.samples = "GPU", 128          # for a desktop GPU (RTX: Preferences > System > OptiX)
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(HERE, "exchange_scene.blend"), compress=True)
     elif mode == "still":
         f = int(argv[1]) if len(argv) > 1 else 60
         if len(argv) > 2:
