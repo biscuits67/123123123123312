@@ -57,9 +57,18 @@ GLYPHS = {
     "Л": ["..#####", ".######", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", "##...##", "##...##"],
     "А": ["..###..", ".#####.", "##...##", "##...##", "##...##", "#######", "#######", "##...##", "##...##", "##...##", "##...##"],
     "Т": ["########", "########"] + ["...##..."] * 9,
-    "⚡": [".....###", "....###.", "...###..", "..###...", ".#######", "#######.", "...###..", "..###...", ".###....",
-          ".##.....", "##......"],
 }
+
+
+BOLT = [".......####.", "......####..", "......###...", ".....####...", ".....###....", "....####....", "....###.....",
+        "...####.....", "...###......", "..##########", ".##########.", "##########..", "......###...", ".....####...",
+        ".....###....", "....####....", "....###.....", "...####.....", "...###......", "..####......", "..###.......",
+        ".###........"]
+
+
+def bolt():
+    a = np.array([[c == "#" for c in r] for r in BOLT], dtype=bool)
+    return np.vstack([a, np.zeros((4, a.shape[1]), dtype=bool)])     # pad like a glyph with descender room
 
 
 def line(text, scale):
@@ -83,7 +92,7 @@ def place(parts):
     x = (COLS - total) // 2
     for p, gap in parts:
         body = p.shape[0] * 11 // 13                # rows above the descender
-        y = (ROWS - body) // 2
+        y = min((ROWS - body) // 2, ROWS - p.shape[0])   # keep a descender (Д) inside the wall
         grid[y:y + p.shape[0], x:x + p.shape[1]] |= p[:ROWS - y]
         x += p.shape[1] + gap
     return grid[::-1]                                # row 0 = bottom
@@ -93,7 +102,7 @@ def draw_mask(kind):
     if kind == "percent":
         return place([(line("75%", 2), 0)])
     if kind == "payout":
-        return place([(line("⚡", 2), 5), (line("ВЫПЛАТЫ", 1), 0)])
+        return place([(bolt(), 6), (line("ВЫПЛАТЫ", 1), 0)])
     return place([(line("1+", 2), 4), (line("ГОД", 2), 0)])
 
 
@@ -117,6 +126,13 @@ black = mat("KW_Black", (0.006, 0.007, 0.007), metal=0.0, rough=0.42)
 black.node_tree.nodes["Principled BSDF"].inputs["Specular IOR Level"].default_value = 0.25
 green = mat("KW_Green", (0.02, 0.45, 0.22), rough=0.25, emit=(0.08, 1.0, 0.5), strength=4.5)
 edge = mat("KW_Edge", (0.012, 0.014, 0.014), metal=0.6, rough=0.35)          # dark anodised sides
+# LED modules are never perfectly even: +-6% brightness per tile from Object Info > Random
+gnt = green.node_tree
+oi = gnt.nodes.new("ShaderNodeObjectInfo")
+mr = gnt.nodes.new("ShaderNodeMapRange")
+mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 4.2, 4.8
+gnt.links.new(oi.outputs["Random"], mr.inputs["Value"])
+gnt.links.new(mr.outputs["Result"], gnt.nodes["Principled BSDF"].inputs["Emission Strength"])
 pitch_y, pitch_z = WID / COLS, HGT / ROWS
 x, y, z = 0.025, pitch_y * 0.47, pitch_z * 0.47
 me = D.meshes.new("kw_tile")
@@ -137,6 +153,49 @@ back.data.materials.append(mat("KW_BackMat", (0.002, 0.003, 0.003), rough=0.9))
 
 col = D.collections.new("Kinetic_Wall")
 scn.collection.children.link(col)
+
+# bezel: black anodised frame around the wall with a thin mint light line on its inner edge, and cover glass
+bez = mat("KW_Bezel", (0.01, 0.011, 0.011), metal=0.8, rough=0.28)
+line_m = mat("KW_BezelLine", (0.05, 0.5, 0.3), emit=(0.08, 1.0, 0.5), strength=8)
+B, DEP = 0.14, 0.12
+fx = FRONT_X + 0.16
+for (dy, dz, sy, sz) in ((0, HGT / 2 + B / 2, WID + 2 * B, B), (0, -HGT / 2 - B / 2, WID + 2 * B, B),
+                         (WID / 2 + B / 2, 0, B, HGT), (-WID / 2 - B / 2, 0, B, HGT)):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(fx, CY + dy, CZ + dz))
+    f = bpy.context.object
+    f.scale = (DEP, sy, sz)
+    f.data.materials.append(bez)
+    bv = f.modifiers.new("bevel", "BEVEL")
+    bv.width, bv.segments = 0.012, 3
+    for c in list(f.users_collection):
+        c.objects.unlink(f)
+    col.objects.link(f)
+for (dy, dz, sy, sz) in ((0, HGT / 2 + 0.006, WID, 0.012), (0, -HGT / 2 - 0.006, WID, 0.012),
+                         (WID / 2 + 0.006, 0, 0.012, HGT), (-WID / 2 - 0.006, 0, 0.012, HGT)):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(fx - DEP / 2 - 0.002, CY + dy, CZ + dz))
+    l_ = bpy.context.object
+    l_.scale = (0.006, sy, sz)
+    l_.data.materials.append(line_m)
+    for c in list(l_.users_collection):
+        c.objects.unlink(l_)
+    col.objects.link(l_)
+glass = D.materials.new("KW_Glass")
+gb = glass.node_tree.nodes["Principled BSDF"]
+gb.inputs["Transmission Weight"].default_value, gb.inputs["Roughness"].default_value = 1.0, 0.02
+gb.inputs["Thin Wall"].default_value = True
+bpy.ops.mesh.primitive_plane_add(size=1, location=(fx - DEP / 2 - 0.01, CY, CZ), rotation=(0, math.radians(90), 0))
+gl = bpy.context.object
+gl.name = "KW_Glass"
+gl.scale = (HGT, WID, 1)
+gl.data.materials.append(glass)
+gl.visible_shadow = False
+gb.inputs["Specular IOR Level"].default_value = 0.35
+key = D.objects.get("Hero_Key")          # its soft box would show up as a grey card in the cover glass
+if key:
+    key.visible_glossy = False
+for c in list(gl.users_collection):
+    c.objects.unlink(gl)
+col.objects.link(gl)
 
 
 def ease(t):
