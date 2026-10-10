@@ -2,7 +2,7 @@
 
     blender -b IN.blend -P kinetic_wall.py -- OUT.blend
 
-84 x 28 black tiles (green glowing back face, green-lit edges) flip in a wave from left to right:
+120 x 38 black tiles (green glowing back face, green-lit edges) flip in a wave from left to right:
     75%  ->  bolt + ВЫПЛАТЫ  ->  1+ ГОД  ->  75% (loop)
 Tiles that change flip 180 deg with an overshoot; the rest twitch as the wave passes, so the whole wall
 moves like an airport board. A caption on the frame under the window switches with each message.
@@ -21,7 +21,7 @@ D, scn = bpy.data, bpy.context.scene
 F0, F1 = 1, 250
 FRONT_X, BACK_X = -52.62, -51.13
 CY, CZ, WID, HGT = -73.49, 2.70, 6.9, 2.6
-COLS, ROWS = 84, 28
+COLS, ROWS = 120, 38
 FONT = "/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf"
 FONT_UI = "/usr/share/fonts/opentype/inter/Inter-SemiBold.otf"
 WAVE = 26          # frames for the wave to cross the wall
@@ -38,28 +38,25 @@ for ob in D.objects:            # the niche's own area light would read as a whi
 # ---------------------------------------------------------------- messages -> tile masks
 # Hand-drawn pixel glyphs (11-row body, 2-tile stems) so every letter lands cleanly on the tile grid;
 # a scaled-down font smears into broken letters at this resolution.
-GLYPHS = {
-    "7": ["#######", "#######", ".....##", "....##.", "....##.", "...##..", "...##..", "..##...", "..##...", "..##...", "..##..."],
-    "5": ["#######", "#######", "##.....", "##.....", "######.", "#######", ".....##", ".....##", "##...##", "#######", ".#####."],
-    "%": [".##....##", "####..##.", "####..##.", ".##..##..", "....##...", "...##....", "..##.....", ".##..##..",
-          ".##.####.", "##..####.", "##...##.."],
-    "1": ["..##.", ".###.", "####.", "..##.", "..##.", "..##.", "..##.", "..##.", "..##.", "#####", "#####"],
-    "+": ["......", "......", "......", "..##..", "..##..", "######", "######", "..##..", "..##..", "......", "......"],
+GLYPHS = {   # 11 rows, 2-tile stems, narrow proportions so the words can be drawn big
+    "7": ["#####", "#####", "...##", "...##", "..##.", "..##.", "..##.", ".##..", ".##..", ".##..", ".##.."],
+    "5": ["#####", "#####", "##...", "##...", "####.", "#####", "...##", "...##", "##.##", "#####", ".###."],
+    "%": [".##...##", "#..#..##", "#..#.##.", ".##.##..", "....##..", "...##...", "..##....", "..##.##.", ".##.#..#",
+          "##..#..#", "##...##."],
+    "1": [".##.", "###.", "###.", ".##.", ".##.", ".##.", ".##.", ".##.", ".##.", "####", "####"],
+    "+": ["......", "......", "......", "..##..", "######", "######", "..##..", "..##..", "......", "......", "......"],
     " ": ["..", "..", "..", "..", "..", "..", "..", "..", "..", "..", ".."],
-    "Г": ["######", "######", "##....", "##....", "##....", "##....", "##....", "##....", "##....", "##....", "##...."],
-    "О": [".#####.", "#######", "##...##", "##...##", "##...##", "##...##", "##...##", "##...##", "##...##", "#######", ".#####."],
-    "Д": ["..#####..", ".######..", ".##..##..", ".##..##..", ".##..##..", ".##..##..", ".##..##..", ".##..##..", ".##..##..",
-          "#########", "#########", "##.....##", "##.....##"],
-    "В": ["######.", "#######", "##...##", "##...##", "##..##.", "######.", "#######", "##...##", "##...##", "#######", "######."],
-    "Ы": ["##.....##", "##.....##", "##.....##", "##.....##", "#####..##", "######.##", "##..##.##", "##..##.##", "##..##.##",
-          "######.##", "#####..##"],
-    "П": ["#######", "#######"] + ["##...##"] * 9,
-    "Л": ["..#####", ".######", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", ".##..##", "##...##", "##...##"],
-    "А": ["..###..", ".#####.", "##...##", "##...##", "##...##", "#######", "#######", "##...##", "##...##", "##...##", "##...##"],
-    "Т": ["########", "########"] + ["...##..."] * 9,
+    "Г": ["#####", "#####"] + ["##..."] * 9,
+    "О": [".####.", "######"] + ["##..##"] * 7 + ["######", ".####."],
+    "Д": ["..####.", ".#####.", ".##.##.", ".##.##.", ".##.##.", ".##.##.", ".##.##.", "##..##.", "#######", "#######", "##...##"],
+    "В": ["####.", "#####", "##.##", "##.##", "####.", "####.", "#####", "##.##", "##.##", "#####", "####."],
+    "Ы": ["##....##", "##....##", "##....##", "##....##", "####..##", "#####.##", "##.##.##", "##.##.##", "##.##.##",
+          "#####.##", "####..##"],
+    "П": ["#####", "#####"] + ["##.##"] * 9,
+    "Л": ["..####", ".#####"] + [".##.##"] * 7 + ["##..##", "##..##"],
+    "А": ["..##..", ".####.", "##..##", "##..##", "##..##", "######", "######", "##..##", "##..##", "##..##", "##..##"],
+    "Т": ["######", "######"] + ["..##.."] * 9,
 }
-
-
 BOLT = [".......####.", "......####..", "......###...", ".....####...", ".....###....", "....####....", "....###.....",
         "...####.....", "...###......", "..##########", ".##########.", "##########..", "......###...", ".....####...",
         ".....###....", "....####....", "....###.....", "...####.....", "...###......", "..####......", "..###.......",
@@ -67,43 +64,40 @@ BOLT = [".......####.", "......####..", "......###...", ".....####...", ".....##
 
 
 def bolt():
-    a = np.array([[c == "#" for c in r] for r in BOLT], dtype=bool)
-    return np.vstack([a, np.zeros((4, a.shape[1]), dtype=bool)])     # pad like a glyph with descender room
+    return np.array([[c == "#" for c in r] for r in BOLT], dtype=bool)
 
 
 def line(text, scale):
-    """Rasterise a word: list of rows (top first) of 0/1, 11*scale tall (+descender)."""
-    cols, h = [], 13
+    """Rasterise a word: rows (top first) x cols of bools, 11*scale tall."""
+    cols = []
     for i, ch in enumerate(text):
-        g = GLYPHS[ch] + ["." * len(GLYPHS[ch][0])] * (13 - len(GLYPHS[ch]))
-        w = len(g[0])
-        for x in range(w):
-            cols.append([g[y][x] == "#" for y in range(h)])
+        g = GLYPHS[ch]
+        for x in range(len(g[0])):
+            cols.append([g[y][x] == "#" for y in range(11)])
         if i < len(text) - 1:
-            cols.append([False] * h)
-    a = np.array(cols, dtype=bool).T                 # rows x cols, row 0 = top
+            cols.append([False] * 11)
+    a = np.array(cols, dtype=bool).T
     return np.kron(a, np.ones((scale, scale), dtype=bool))
 
 
 def place(parts):
-    """parts: list of (bitmap, gap_after). Bitmaps are centred on the 11-row body line, the group is centred."""
+    """parts: list of (bitmap, gap_after); everything centred on the wall."""
     grid = np.zeros((ROWS, COLS), dtype=bool)
     total = sum(p.shape[1] + gap for p, gap in parts) - parts[-1][1]
     x = (COLS - total) // 2
     for p, gap in parts:
-        body = p.shape[0] * 11 // 13                # rows above the descender
-        y = min((ROWS - body) // 2, ROWS - p.shape[0])   # keep a descender (Д) inside the wall
-        grid[y:y + p.shape[0], x:x + p.shape[1]] |= p[:ROWS - y]
+        y = (ROWS - p.shape[0]) // 2
+        grid[y:y + p.shape[0], x:x + p.shape[1]] |= p
         x += p.shape[1] + gap
     return grid[::-1]                                # row 0 = bottom
 
 
 def draw_mask(kind):
     if kind == "percent":
-        return place([(line("75%", 2), 0)])
+        return place([(line("75%", 3), 0)])
     if kind == "payout":
-        return place([(bolt(), 6), (line("ВЫПЛАТЫ", 1), 0)])
-    return place([(line("1+", 2), 4), (line("ГОД", 2), 0)])
+        return place([(bolt(), 5), (line("ВЫПЛАТЫ", 2), 0)])
+    return place([(line("1+ ГОД", 3), 0)])
 
 
 MASKS = [draw_mask(k) for k in ("percent", "payout", "year")]
