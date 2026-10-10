@@ -5,7 +5,7 @@
     (head turns to look at it), holds, and lowers again; the left hand leans on the fender,
     slow breathing, chest turned a little towards the camera.
 
-    blender -b IN.blend -P sit_pose.py -- OUT.blend
+    blender -b IN.blend -P sit_pose.py -- OUT.blend [SHOE_TEXTURE]
 
 All poses are built analytically in "character space" (the rig's frame with the object's location and
 Z turn removed: +X = character's left, -Y = facing, +Z = up) and written as quaternion keys.
@@ -223,33 +223,26 @@ if glow:
     glow.data.energy = 4.0
 em = gem.data.materials[0].node_tree.nodes["Principled BSDF"]
 em.inputs["Emission Strength"].default_value = 0.12
-# Defender sneakers: the scan came without its texture, so the flat black read as a blob.
-# Shade from the scan's own geometry instead: lighter grey on ridges and the tread, dark in the cavities,
-# a fine noise for the knit/rubber grain.
-shoe_mat = D.materials.get("Shoe")
-if shoe_mat:
+# Defender sneakers: the scan's own colour texture (texgen_1), plus a light bump from its luminance
+SHOE_TEX = sys.argv[sys.argv.index("--") + 2] if len(sys.argv) > sys.argv.index("--") + 2 else None
+shoe_mat = D.objects["Hero_Shoe_Left"].data.materials[0] if "Hero_Shoe_Left" in D.objects else None
+if shoe_mat and SHOE_TEX:
     nt = shoe_mat.node_tree
     for n in [n for n in nt.nodes if n.type not in ("BSDF_PRINCIPLED", "OUTPUT_MATERIAL")]:
         nt.nodes.remove(n)
     b = nt.nodes["Principled BSDF"]
-    geo = nt.nodes.new("ShaderNodeNewGeometry")
-    ramp = nt.nodes.new("ShaderNodeValToRGB")
-    ramp.color_ramp.elements[0].position, ramp.color_ramp.elements[1].position = 0.45, 0.62
-    ramp.color_ramp.elements[0].color = (0.012, 0.012, 0.013, 1)
-    ramp.color_ramp.elements[1].color = (0.16, 0.16, 0.165, 1)
-    noise = nt.nodes.new("ShaderNodeTexNoise")
-    noise.inputs["Scale"].default_value = 900
+    img = D.images.load(SHOE_TEX)
+    img.pack()
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = img
     bump = nt.nodes.new("ShaderNodeBump")
-    bump.inputs["Strength"].default_value = 0.25
-    rough = nt.nodes.new("ShaderNodeMapRange")
-    rough.inputs["To Min"].default_value, rough.inputs["To Max"].default_value = 0.45, 0.8
-    nt.links.new(geo.outputs["Pointiness"], ramp.inputs["Fac"])
-    nt.links.new(ramp.outputs["Color"], b.inputs["Base Color"])
-    nt.links.new(noise.outputs["Fac"], bump.inputs["Height"])
+    bump.inputs["Strength"].default_value = 0.35
+    bump.inputs["Distance"].default_value = 0.002
+    nt.links.new(tex.outputs["Color"], b.inputs["Base Color"])
+    nt.links.new(tex.outputs["Color"], bump.inputs["Height"])
     nt.links.new(bump.outputs["Normal"], b.inputs["Normal"])
-    nt.links.new(noise.outputs["Fac"], rough.inputs["Value"])
-    nt.links.new(rough.outputs["Result"], b.inputs["Roughness"])
-    b.inputs["Sheen Weight"].default_value = 0.3
+    b.inputs["Roughness"].default_value = 0.62
+    b.inputs["Sheen Weight"].default_value = 0.25
 
 # soft key light on the hero from camera left, so the hoodie and the pose read in the dark
 key = D.objects.new("Hero_Key", D.lights.new("Hero_Key", "AREA"))
