@@ -223,8 +223,6 @@ for fc in act.layers[0].strips[0].channelbag(rig.animation_data.action_slot).fcu
 glow = D.objects.get("Hero_Emerald_Glow")
 if glow:
     glow.data.energy = 4.0
-em = gem.data.materials[0].node_tree.nodes["Principled BSDF"]
-em.inputs["Emission Strength"].default_value = 0.12
 # Defender sneakers: the scan's own colour texture (texgen_1), plus a light bump from its luminance
 SHOE_TEX = sys.argv[sys.argv.index("--") + 2] if len(sys.argv) > sys.argv.index("--") + 2 else None
 shoe_mat = D.objects["Hero_Shoe_Left"].data.materials[0] if "Hero_Shoe_Left" in D.objects else None
@@ -246,10 +244,64 @@ if shoe_mat and SHOE_TEX:
     b.inputs["Roughness"].default_value = 0.62
     b.inputs["Sheen Weight"].default_value = 0.25
 
+# emerald-cut stone (octagon step cut, like the reference): table, 3 crown steps, girdle, 3 pavilion steps, keel
+def emerald_cut(length=0.062, ratio=0.74, corner=0.26):
+    a, b = 1.0, ratio
+    def ring(sc, z):
+        c = corner * sc
+        A, B = a * sc, b * sc
+        return [(A - c, B, z), (-(A - c), B, z), (-A, B - c, z), (-A, -(B - c), z),
+                (-(A - c), -B, z), (A - c, -B, z), (A, -(B - c), z), (A, B - c, z)]
+    profile = [(0.70, 0.21), (0.82, 0.17), (0.91, 0.11), (0.97, 0.05), (1.0, 0.0), (1.0, -0.035),
+               (0.84, -0.22), (0.6, -0.42), (0.34, -0.58), (0.1, -0.68)]
+    verts, faces = [], []
+    for sc, z in profile:
+        verts += ring(sc, z)
+    for i in range(len(profile) - 1):
+        for k in range(8):
+            p, q = i * 8 + k, i * 8 + (k + 1) % 8
+            faces.append((p, q, q + 8, p + 8))
+    faces.append(tuple(range(7, -1, -1)))                       # table
+    last = (len(profile) - 1) * 8
+    faces.append(tuple(range(last, last + 8)))                  # tiny keel facet
+    s_ = length / 2
+    me = D.meshes.new("emerald_cut")
+    me.from_pydata([(x * s_, y * s_, z * s_) for x, y, z in verts], [], faces)
+    me.update()
+    return me
+
+
+gem_ob = D.objects["Hero_Emerald"]
+old_mesh = gem_ob.data
+gem_ob.data = emerald_cut()
+gem_ob.data.validate()
+gem_ob.scale = (1, 1, 1)
+gem_ob.rotation_euler.x, gem_ob.rotation_euler.y = math.radians(90), math.radians(90)   # upright: long side vertical, table facing out; the driver spins it about Z
+gm = D.materials.new("Emerald_Cut")
+nt = gm.node_tree
+b = nt.nodes["Principled BSDF"]
+b.inputs["Base Color"].default_value = (0.0, 0.42, 0.12, 1)
+b.inputs["Transmission Weight"].default_value = 1.0
+b.inputs["IOR"].default_value = 1.577
+b.inputs["Roughness"].default_value = 0.015
+b.inputs["Emission Color"].default_value = (0.08, 0.9, 0.4, 1)
+b.inputs["Emission Strength"].default_value = 0.1
+absorb = nt.nodes.new("ShaderNodeVolumeAbsorption")
+absorb.inputs["Color"].default_value = (0.02, 0.62, 0.2, 1)
+absorb.inputs["Density"].default_value = 70.0                    # deeper green through the thick of the stone
+nt.links.new(absorb.outputs["Volume"], nt.nodes["Material Output"].inputs["Volume"])
+gem_ob.data.materials.append(gm)
+if old_mesh.users == 0:
+    D.meshes.remove(old_mesh)
+
 # point lights render as glowing spheres to the camera in Cycles: keep their light, hide the bulbs
 for ob in D.objects:
     if ob.type == "LIGHT" and ob.data.type in ("POINT", "SPOT"):
         ob.visible_camera = False
+glow = D.objects.get("Hero_Emerald_Glow")
+if glow:          # it sits inside the stone: let it light the hand and hoodie, not show through the gem
+    glow.visible_transmission = False
+    glow.visible_glossy = False
 
 # soft key light on the hero from camera left, so the hoodie and the pose read in the dark
 key = D.objects.new("Hero_Key", D.lights.new("Hero_Key", "AREA"))
