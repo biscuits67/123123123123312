@@ -120,7 +120,7 @@ def pose_for(f):
     fa = lerp_dir((0.3, -0.95, 0.08), (0.28, -0.55, 0.78), w)
     hd = lerp_dir((0.12, -0.99, 0.05), (0.2, -0.97, 0.1), w)
     hover = 0.15 * w * math.sin(tau * 5)       # tiny float while it is up
-    rot["RightArm"] = aim("RightArm", u, (0, 0, -1), (0.0, -0.3, -0.9) if w < 0.5 else (0, -0.9, 0.3))
+    rot["RightArm"] = aim("RightArm", u, (0, 0, -1), lerp_dir((0.0, -0.3, -0.9), (0, -0.9, 0.3), w))
     rot["RightForeArm"] = aim("RightForeArm", (fa.x, fa.y, fa.z + hover), (0, 0, -1), (0.2, 0.0, 1))
     rot["RightHand"] = aim("RightHand", hd, (0, 0, -1), (0, 0, 1))
     # left arm: straight down beside the hip, hand on the fender
@@ -172,7 +172,9 @@ def chain(rot):
             R = rot.get(n)
             if R is None:          # keep the rest relation to the parent (shoulders, fingers, toes, ...)
                 R = (par.to_3x3().normalized() @ rel.to_3x3().normalized())
-                if "RightHand" in n and n != "RightHand":
+                if "Thumb" in n:
+                    pass                                                   # thumb keeps its rest spread
+                elif "RightHand" in n and n != "RightHand":
                     R = R @ Matrix.Rotation(math.radians(9), 3, "X")      # relaxed open fingers
                 if "LeftHand" in n and n != "LeftHand":
                     R = R @ Matrix.Rotation(math.radians(14), 3, "X")
@@ -221,6 +223,34 @@ if glow:
     glow.data.energy = 4.0
 em = gem.data.materials[0].node_tree.nodes["Principled BSDF"]
 em.inputs["Emission Strength"].default_value = 0.12
+# Defender sneakers: the scan came without its texture, so the flat black read as a blob.
+# Shade from the scan's own geometry instead: lighter grey on ridges and the tread, dark in the cavities,
+# a fine noise for the knit/rubber grain.
+shoe_mat = D.materials.get("Shoe")
+if shoe_mat:
+    nt = shoe_mat.node_tree
+    for n in [n for n in nt.nodes if n.type not in ("BSDF_PRINCIPLED", "OUTPUT_MATERIAL")]:
+        nt.nodes.remove(n)
+    b = nt.nodes["Principled BSDF"]
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position, ramp.color_ramp.elements[1].position = 0.45, 0.62
+    ramp.color_ramp.elements[0].color = (0.012, 0.012, 0.013, 1)
+    ramp.color_ramp.elements[1].color = (0.16, 0.16, 0.165, 1)
+    noise = nt.nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 900
+    bump = nt.nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.25
+    rough = nt.nodes.new("ShaderNodeMapRange")
+    rough.inputs["To Min"].default_value, rough.inputs["To Max"].default_value = 0.45, 0.8
+    nt.links.new(geo.outputs["Pointiness"], ramp.inputs["Fac"])
+    nt.links.new(ramp.outputs["Color"], b.inputs["Base Color"])
+    nt.links.new(noise.outputs["Fac"], bump.inputs["Height"])
+    nt.links.new(bump.outputs["Normal"], b.inputs["Normal"])
+    nt.links.new(noise.outputs["Fac"], rough.inputs["Value"])
+    nt.links.new(rough.outputs["Result"], b.inputs["Roughness"])
+    b.inputs["Sheen Weight"].default_value = 0.3
+
 # soft key light on the hero from camera left, so the hoodie and the pose read in the dark
 key = D.objects.new("Hero_Key", D.lights.new("Hero_Key", "AREA"))
 key.data.energy, key.data.size, key.data.color = 35, 1.2, (0.75, 0.88, 1.0)
