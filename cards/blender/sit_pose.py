@@ -172,7 +172,9 @@ def chain(rot):
             R = rot.get(n)
             if R is None:          # keep the rest relation to the parent (shoulders, fingers, toes, ...)
                 R = (par.to_3x3().normalized() @ rel.to_3x3().normalized())
-                if "Thumb" in n:
+                if n == "RightHandThumb1":
+                    R = R @ Matrix.Rotation(math.radians(-32), 3, "X")    # lay the thumb along the palm
+                elif "Thumb" in n:
                     pass                                                   # thumb keeps its rest spread
                 elif "RightHand" in n and n != "RightHand":
                     R = R @ Matrix.Rotation(math.radians(9), 3, "X")      # relaxed open fingers
@@ -243,6 +245,11 @@ if shoe_mat and SHOE_TEX:
     nt.links.new(bump.outputs["Normal"], b.inputs["Normal"])
     b.inputs["Roughness"].default_value = 0.62
     b.inputs["Sheen Weight"].default_value = 0.25
+
+# point lights render as glowing spheres to the camera in Cycles: keep their light, hide the bulbs
+for ob in D.objects:
+    if ob.type == "LIGHT" and ob.data.type in ("POINT", "SPOT"):
+        ob.visible_camera = False
 
 # soft key light on the hero from camera left, so the hoodie and the pose read in the dark
 key = D.objects.new("Hero_Key", D.lights.new("Hero_Key", "AREA"))
