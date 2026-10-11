@@ -218,10 +218,15 @@ note_mesh = D.meshes.get("bill")
 G, FPS = 9.81, 24.0
 dt = 1 / FPS
 WM = {f: fork_world(f) for f in range(F0, F1 + 1)}
+scn.frame_set(F0)                                    # bundle seats are measured on the frame-1 pallet
 ground_z = 0.02
 bundles = []
 for i in range(4):
-    local = WM[F0].inverted() @ Vector((plo.x + 0.18 + 0.1 * i, phi.y - 0.3 - 0.38 * i, phi.z + 0.03))
+    px, py = plo.x + 0.18 + 0.1 * i, phi.y - 0.3 - 0.38 * i
+    inv = pallet.matrix_world.inverted()                  # sit exactly on the wrap: ray-cast down onto the pallet
+    hit, loc, _, _ = pallet.ray_cast(inv @ Vector((px, py, phi.z + 1)), (inv.to_3x3() @ Vector((0, 0, -1))).normalized())
+    top = (pallet.matrix_world @ loc).z if hit else phi.z
+    local = WM[F0].inverted() @ Vector((px, py, top + 0.026))
     drop = DROP + 2 + i
     b_ob = D.objects.new(f"Drop_Bundle_{i}", bundle_mesh)
     col.objects.link(b_ob)
