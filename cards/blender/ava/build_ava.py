@@ -343,11 +343,18 @@ N0_PALM = W0.cross(Y0_hand).normalized()                     # right hand: out o
 phone_h = 0.163
 
 
+Y0_L = rest("LeftHand").col[1]
+W0_L = bones[P + "LeftHandIndex1"].head_local - bones[P + "LeftHandPinky1"].head_local
+W0_L = (W0_L - Y0_L * W0_L.dot(Y0_L)).normalized()
+N0_PALM_L = Y0_L.cross(W0_L).normalized()                   # mirrored hand: opposite cross order
+
+
 def frame_rot(name, d_char, n_char):
     """Bone along char-space d_char, with the (rest) palm-side vector turned to n_char: no hidden twist."""
     R0 = rest(name)
     y0 = R0.col[1]
-    n0 = (N0_PALM - y0 * N0_PALM.dot(y0)).normalized()
+    N0 = N0_PALM_L if name.startswith("Left") else N0_PALM
+    n0 = (N0 - y0 * N0.dot(y0)).normalized()
     R = frame3(to_arm_dir(d_char), to_arm_dir(n_char)) @ frame3(y0, n0).inverted()
     return R @ R0
 
@@ -390,6 +397,32 @@ def grip(rot, pose, f, w):
     return Matrix.Translation(C) @ Matrix((xp, yp, zp)).transposed().to_4x4()
 
 
+def lean_hand(rot, pose):
+    """Left hand flat on the fender beside the hip, fingers forward and out, elbow back: IK, no wrist twist."""
+    p_c = Vector((0.27, -0.02, 0))
+    hit = ray_down(*(CH @ p_c).xy, only=car_set)
+    top = world_to_char(hit).z if hit else SURFACE
+    F = Vector((0.35, -1, 0)).normalized()
+    palm_c = Vector((p_c.x, p_c.y, top + 0.018))
+    T = palm_c - F * (L_hand * SC * 0.5) + Vector((0, 0, 0.025))
+    S = to_char(pose["LeftArm"].translation)
+    a = bones[P + "LeftArm"].length * SC
+    b = bones[P + "LeftForeArm"].length * SC
+    El = two_bone(S, T, a, b, Vector((0.5, 0.8, 0.1)))
+    down = Vector((0, 0, -1))
+    rot["LeftArm"] = frame_rot("LeftArm", El - S, (down + Vector((0, 0.3, 0))).normalized())
+    rot["LeftForeArm"] = frame_rot("LeftForeArm", T - El, down)
+    rot["LeftHand"] = frame_rot("LeftHand", (F + Vector((0, 0, -0.15))).normalized(), down)
+
+
+for nm in ("Hero_Hoodie", "Hero_Pants"):                 # soft fabric at the bent elbow / knees instead of creases
+    ob_ = D.objects.get(nm)
+    if ob_ and not ob_.modifiers.get("Fabric_Smooth"):
+        cs = ob_.modifiers.new("Fabric_Smooth", "CORRECTIVE_SMOOTH")
+        cs.factor, cs.iterations, cs.smooth_type = 0.8, 12, "LENGTH_WEIGHTED"
+        cs.rest_source = "ORCO"
+
+
 def phone_in_hand():
     return Matrix.Identity(4)
 
@@ -408,6 +441,7 @@ for f in range(F0, F1 + 1):
     LOCAL.update(TX[f])
     pose = chain(rot, f)
     ph_c = grip(rot, pose, f, w)
+    lean_hand(rot, pose)
     tgt_c = world_to_char(vac_pos(f) + Vector((0, 0, 0.05)))
     rot["Head"] = head_rot(f, tgt_c, w, ph_c.translation)
     pose = chain(rot, f)
@@ -645,16 +679,19 @@ cam.animation_data_clear()
 cam.data.dof.use_dof = True
 cam.data.dof.focus_object = None
 cam.data.dof.aperture_fstop = 2.4
+HERO_AIM = sum((head_world[f] for f in range(F0, F1 + 1)), Vector()) / LOOP - Vector((0, 0, 0.3))
 for f in range(F0, F1 + 1):
     t = 2 * math.pi * (f - F0) / LOOP
     orbit = math.radians(12) * math.sin(t)
     R = Matrix.Translation(pivot) @ Matrix.Rotation(orbit, 4, "Z") @ Matrix.Translation(-pivot)
     pos = R @ cam_pos0
     tgt0 = R @ base_target
-    pw = window(f, 100, 220, 36)                                  # push-in while the hero watches the vacuum
-    hero_t = head_world[f] - Vector((0, 0, 0.35))
-    tgt = tgt0 + (hero_t - tgt0) * (0.75 * pw)
-    pos = pos + (hero_t - pos).normalized() * (1.6 * pw)
+    # one continuous, eased move per loop (no start/stop): drift in towards the hero, peak while he
+    # watches the vacuum (~frame 150), drift back out; aim at a fixed point on him, not the moving head
+    pw = 0.5 - 0.5 * math.cos(t - 2 * math.pi * (150 - 120) / LOOP)
+    pw = pw * pw * (3 - 2 * pw)
+    tgt = tgt0 + (HERO_AIM - tgt0) * (0.6 * pw)
+    pos = pos + (HERO_AIM - pos).normalized() * (1.3 * pw)
     pos += Vector((0, 0, 0.006 * math.sin(3 * t + 0.4) + 0.004 * math.sin(7 * t)))
     look_q = (tgt - pos).to_track_quat("-Z", "Y")
     sway = Euler((math.radians(0.25 * math.sin(2 * t + 0.7) + 0.08 * math.sin(9 * t)),
