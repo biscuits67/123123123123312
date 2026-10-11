@@ -367,7 +367,7 @@ def grip(rot, pose, f, w):
     Right hand: phone's right edge in the palm, fingers round the back, thumb on the screen, wrist straight."""
     head_c = to_char(pose["Head"].translation)
     eye_c = head_c + Vector((0, -0.07, 0.09))
-    C = eye_c + Vector((-0.05, -0.33 - 0.03 * w, -0.27 - 0.1 * w))
+    C = eye_c + Vector((-0.07, -0.30 - 0.03 * w, -0.36 - 0.08 * w))   # chest height: the elbow can hang
     to_eye = eye_c - C
     n = (Vector((to_eye.x, to_eye.y, 0)).normalized() + Vector((0, 0, 0.35))).normalized()   # screen normal
     up = Vector((0, 0, 1))
@@ -382,7 +382,7 @@ def grip(rot, pose, f, w):
     S = to_char(pose["RightArm"].translation)
     a = bones[P + "RightArm"].length * SC
     b = bones[P + "RightForeArm"].length * SC
-    El = two_bone(S, T, a, b, Vector((-0.7, 0.25, -1.0)))
+    El = two_bone(S, T, a, b, Vector((-0.25, 0.15, -1.0)))   # elbow down by the ribs, not winged out
     n_up = (Nw * 0.5 + Vector((0, -0.3, -1)).normalized() * 0.5).normalized()
     rot["RightArm"] = frame_rot("RightArm", El - S, n_up)
     rot["RightForeArm"] = frame_rot("RightForeArm", T - El, Nw)
