@@ -166,6 +166,7 @@ def aim(n, d, ref_rest=None, ref_target=None, pre=None):
 
 cam_c = world_to_char(cam_pos0)
 cam_yaw = math.atan2(cam_c.x, -cam_c.y)
+CAM_DIR_C = (cam_c - Vector((0, 0, SURFACE + 0.6))).normalized()
 
 # ---------------------------------------------------------------- vacuum path + timing (the hero reacts to it)
 # a line on the floor parallel to the car, in front of the camera-side flank; keep the visible stretch
@@ -241,14 +242,16 @@ def pose_for(f):
         lean = (0.10, 0.16, 0.18)[i] * (1 - 0.45 * w) + 0.012 * breathe
         rot[n] = aim(n, (0, -lean, 1), pre=Matrix.Rotation(tw * (i + 1) / 3, 4, "Z"))
     rot["Neck"] = aim("Neck", (0, -0.16 * (1 - 0.4 * w), 1), pre=Matrix.Rotation(tw, 4, "Z"))
-    # right arm: phone held in front of the chest, screen to the face; lowers a bit while watching
-    k = 0.35 * w
-    u = (-0.12, -0.30 + 0.05 * k, -0.95)
-    fa = ((0.36 - 0.1 * k), -0.55, (0.76 - 0.4 * k))
-    hd = (0.25, -0.75, 0.6 - 0.3 * k)
+    # right arm: phone held up in front of the face like anyone reads a phone: screen to the eyes,
+    # the back (burgundy, big camera island) towards the camera; lowers a little while watching
+    k = 0.4 * w
+    u = (-0.1, -0.5, -0.86)
+    fa = (0.36, -0.72 + 0.1 * k, 0.6 - 0.3 * k)
+    hd = (0.82, -0.5, 0.28 - 0.2 * k)                       # fingers across, so the phone stands upright
+    palm = Vector((0.05, 0.86, 0.5 - 0.25 * k)).normalized()
     rot["RightArm"] = aim("RightArm", u, (0, 0, -1), (0.0, -0.3, -0.9))
     rot["RightForeArm"] = aim("RightForeArm", fa, (0, 0, -1), (0.25, 0.1, 1))
-    rot["RightHand"] = aim("RightHand", hd, (0, 0, -1), (-0.1, -0.8, -0.55))   # palm (and phone) to the face
+    rot["RightHand"] = aim("RightHand", hd, (0, 0, -1), -palm)
     # left arm: leaning on the fender beside the hip
     rot["LeftArm"] = aim("LeftArm", (0.24, 0.28, -0.93), (0, 0, -1), (0.0, 0.9, 0.2))
     rot["LeftForeArm"] = aim("LeftForeArm", (0.14, 0.18, -0.97), (0, 0, -1), (0.0, 0.9, 0.2))
@@ -300,7 +303,7 @@ def chain(rot, f):
                     else:
                         R = R @ Matrix.Rotation(math.radians(10 - 25 * fl), 3, "X")
                 elif n.startswith("RightHand"):
-                    R = R @ Matrix.Rotation(math.radians(38), 3, "X")       # fingers wrap the phone edge
+                    R = R @ Matrix.Rotation(math.radians(52), 3, "X")       # fingers wrap the phone edge
                 elif n.startswith("LeftHand"):
                     R = R @ Matrix.Rotation(math.radians(14), 3, "X")
             M = Matrix.Translation(head) @ R.to_4x4()
@@ -344,7 +347,10 @@ for f in range(F0, F1 + 1):
     rot["Head"] = head_rot(f, tgt_c, w, phone_c)
     pose = chain(rot, f)
     head_world[f] = CH @ to_char(pose["Head"].translation)
-    phone_world[f] = CH @ phone_c
+    hand_m = pose["RightHand"]
+    palm_c = to_char(hand_m @ Vector((0, L_hand * 0.85, 0)))
+    eye_c = to_char(pose["Head"] @ Vector((0, bones[P + "Head"].length * 0.45, 0)))
+    phone_world[f] = (CH @ palm_c, CH @ eye_c)
     for n, M in pose.items():
         b = bones[P + n]
         pb = rig.pose.bones[P + n]
@@ -404,23 +410,49 @@ for c in list(phone.users_collection):
     c.objects.unlink(phone)
 hero_coll.objects.link(phone)
 phone.data.transform(Matrix.Translation((0, 0, -phone_h / 2)))            # origin at the centre
-phone.parent = rig
-phone.parent_type = "BONE"
-phone.parent_bone = P + "RightHand"
-scn.frame_set(F0)
-hand_pb = rig.pose.bones[P + "RightHand"]
-up_w = (rig.matrix_world.to_3x3() @ hand_pb.matrix.to_3x3() @ PHONE_BONE.to_3x3() @ Vector((0, 0, 1)))
-if up_w.z < 0:
-    PHONE_BONE = phone_bone_matrix(-1)
-phone.matrix_world = rig.matrix_world @ hand_pb.matrix @ PHONE_BONE @ Matrix.Scale(1 / rig.scale[0], 4)
+# keyed per frame: bottom third in the palm, standing upright, screen square to the eyes,
+# so the camera sees the burgundy back with the big camera island
+for f in range(F0, F1 + 1):
+    palm_w, eye_w = phone_world[f]
+    upw = Vector((0, 0, 1))
+    to_eye = eye_w - palm_w
+    n_h = Vector((to_eye.x, to_eye.y, 0)).normalized()
+    n = (n_h + upw * 0.6).normalized()                  # screen normal: tilted back ~30 deg, held up, not flat
+    pos = palm_w + upw * 0.025 + n * 0.018
+    z = (upw - n * upw.dot(n)).normalized()             # long axis, as upright as the screen allows
+    y = -n                                              # model: screen faces -Y
+    x = y.cross(z)
+    phone.matrix_world = Matrix.Translation(pos) @ Matrix((x, y, z)).transposed().to_4x4()
+    phone.keyframe_insert("location", frame=f)
+    phone.keyframe_insert("rotation_euler", frame=f)
+linear_keys(phone)
 for m in D.materials:                                            # black gloves instead of mannequin hands
     if m.name.startswith("Gloves"):
         g = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
         for l in list(g.inputs["Base Color"].links):
             m.node_tree.links.remove(l)
-        g.inputs["Base Color"].default_value = (0.02, 0.02, 0.022, 1)
-        g.inputs["Roughness"].default_value = 0.45
-        g.inputs["Sheen Weight"].default_value = 0.0
+        g.inputs["Base Color"].default_value = (0.008, 0.008, 0.009, 1)
+        g.inputs["Roughness"].default_value = 0.38
+        g.inputs["Specular IOR Level"].default_value = 0.6
+        g.inputs["Coat Weight"].default_value = 0.12
+        g.inputs["Coat Roughness"].default_value = 0.3
+        gn = m.node_tree
+        wn = gn.nodes.new("ShaderNodeTexNoise")
+        wn.inputs["Scale"].default_value = 180
+        wn.inputs["Detail"].default_value = 6
+        wb = gn.nodes.new("ShaderNodeBump")
+        wb.inputs["Strength"].default_value = 0.25
+        wb.inputs["Distance"].default_value = 0.001
+        gn.links.new(wn.outputs["Fac"], wb.inputs["Height"])
+        gn.links.new(wb.outputs["Normal"], g.inputs["Normal"])
+for gname in ("Hero_Hands_Head", "Hero_Joints"):
+    go = D.objects[gname]
+    rm = go.modifiers.new("Glove_Fuse", "REMESH")       # after the armature: segments melt into one skin
+    rm.mode, rm.adaptivity = "VOXEL", 0.0
+    rm.voxel_size = 0.003 / go.matrix_world.to_scale().x            # object units are rig units (cm)
+    rm.use_smooth_shade = True
+    sm = go.modifiers.new("Glove_Smooth", "SMOOTH")
+    sm.factor, sm.iterations = 0.5, 3
 # the screen: our wallet app, emissive, scrolls a page with each thumb swipe
 scr_img = D.images.load(os.path.join(AVA, "phone_screen.png"))
 scr_img.pack()
@@ -435,7 +467,7 @@ snt.links.new(tc.outputs["UV"], mp.inputs["Vector"])
 snt.links.new(mp.outputs["Vector"], tx.inputs["Vector"])
 snt.links.new(tx.outputs["Color"], sb.inputs["Base Color"])
 snt.links.new(tx.outputs["Color"], sb.inputs["Emission Color"])
-sb.inputs["Emission Strength"].default_value = 2.2
+sb.inputs["Emission Strength"].default_value = 3.5
 sb.inputs["Roughness"].default_value = 0.08
 for i, m in enumerate(phone.data.materials):
     if m and "Screen" in m.name:
@@ -452,7 +484,7 @@ linear_keys(snt)
 # screen light on the face
 sl = D.objects.new("Phone_Screen_Light", D.lights.new("Phone_Screen_Light", "AREA"))
 sl.data.shape, sl.data.size, sl.data.size_y = "RECTANGLE", 0.07, 0.15
-sl.data.energy, sl.data.color = 1.6, (0.75, 1.0, 0.85)
+sl.data.energy, sl.data.color = 2.5, (0.75, 1.0, 0.85)
 hero_coll.objects.link(sl)
 sl.parent = phone
 sl.matrix_parent_inverse = Matrix.Identity(4)
@@ -608,6 +640,188 @@ for name, power, size, col, off in (("Hero_Key", 12, 1.0, (0.85, 0.95, 1.0), cam
     L.location = seat3 + off
     L.rotation_euler = (seat3 - L.location).to_track_quat("-Z", "Y").to_euler()
     L.visible_camera = L.visible_glossy = False
+
+# ---------------------------------------------------------------- QWIZ: levitating neon letters above the car
+FONT = "/usr/share/fonts/opentype/inter/InterDisplay-Black.otf"
+cam_mw0 = base
+right_c = (cam_mw0.to_3x3() @ Vector((1, 0, 0)))
+right_c.z = 0
+right_c.normalize()
+to_cam = Vector((cam_pos0.x - cen.x, cam_pos0.y - cen.y, 0)).normalized()
+# a spot in the upper half of the frame, behind the car
+Q_C = Vector((cen.x, cen.y, 0)) - to_cam * 2.2 + right_c * 0.6
+Q_C.z = 2.15
+Q_H = 0.85                                                   # cap height, m
+q_root = D.objects.new("QWIZ_Root", None)
+props.objects.link(q_root)
+q_root.matrix_world = Matrix.Translation(Q_C) @ Matrix((right_c, to_cam.cross(right_c), to_cam)).transposed().to_4x4()
+# face: dark mirror metal with a scanner sweep; sides: emerald neon, one gain per letter
+face = D.materials.new("QWIZ_Face")
+fnt = face.node_tree
+fb = next(n for n in fnt.nodes if n.type == "BSDF_PRINCIPLED")
+fb.inputs["Base Color"].default_value = (0.02, 0.025, 0.024, 1)
+fb.inputs["Metallic"].default_value = 1.0
+fb.inputs["Roughness"].default_value = 0.12
+fb.inputs["Emission Color"].default_value = (0.75, 1.0, 0.85, 1)
+tco = fnt.nodes.new("ShaderNodeTexCoord")
+tco.object = q_root
+sep = fnt.nodes.new("ShaderNodeSeparateXYZ")
+sweep = fnt.nodes.new("ShaderNodeValue")
+sweep.name = "Sweep"
+sub = fnt.nodes.new("ShaderNodeMath")
+sub.operation = "SUBTRACT"
+absn = fnt.nodes.new("ShaderNodeMath")
+absn.operation = "ABSOLUTE"
+band = fnt.nodes.new("ShaderNodeMapRange")
+band.inputs["From Min"].default_value, band.inputs["From Max"].default_value = 0.0, 0.18
+band.inputs["To Min"].default_value, band.inputs["To Max"].default_value = 9.0, 0.0
+skew = fnt.nodes.new("ShaderNodeMath")
+skew.operation = "MULTIPLY_ADD"                               # slanted band: x + 0.35 y
+skew.inputs[1].default_value = 0.35
+fnt.links.new(tco.outputs["Object"], sep.inputs["Vector"])
+fnt.links.new(sep.outputs["Y"], skew.inputs[0])
+fnt.links.new(sep.outputs["X"], skew.inputs[2])
+fnt.links.new(skew.outputs[0], sub.inputs[0])
+fnt.links.new(sweep.outputs[0], sub.inputs[1])
+fnt.links.new(sub.outputs[0], absn.inputs[0])
+fnt.links.new(absn.outputs[0], band.inputs["Value"])
+fnt.links.new(band.outputs["Result"], fb.inputs["Emission Strength"])
+SWEEPS = ((58, 92), (196, 226))                               # two passes per loop
+for f in range(F0, F1 + 1):
+    v = -9.0
+    for a_, b_ in SWEEPS:
+        if a_ <= f <= b_:
+            v = -2.0 + 4.6 * smooth((f - a_) / (b_ - a_))
+    sweep.outputs[0].default_value = v
+    sweep.outputs[0].keyframe_insert("default_value", frame=f)
+linear_keys(fnt)
+
+x_cursor = 0.0
+letters = []
+for i, ch in enumerate("QWIZ"):
+    cu = D.curves.new(f"QWIZ_{ch}", "FONT")
+    cu.body = ch
+    cu.font = D.fonts.load(FONT, check_existing=True)
+    cu.size = Q_H / 0.73
+    cu.extrude = 0.07
+    cu.bevel_depth = 0.008
+    cu.align_x, cu.align_y = "CENTER", "CENTER"
+    ob = D.objects.new(f"QWIZ_{ch}", cu)
+    props.objects.link(ob)
+    with bpy.context.temp_override(active_object=ob, selected_editable_objects=[ob], object=ob):
+        bpy.ops.object.convert(target="MESH")
+    ob = D.objects[f"QWIZ_{ch}"]
+    me = ob.data
+    xs = [v.co.x for v in me.vertices]
+    w_ = max(xs) - min(xs)
+    neon = D.materials.new(f"QWIZ_Neon_{ch}")
+    nn = neon.node_tree
+    nb = next(n for n in nn.nodes if n.type == "BSDF_PRINCIPLED")
+    nb.inputs["Base Color"].default_value = (0.0, 0.05, 0.02, 1)
+    nb.inputs["Emission Color"].default_value = (0.05, 1.0, 0.35, 1)
+    me.materials.clear()
+    me.materials.append(face)
+    me.materials.append(neon)
+    for poly in me.polygons:
+        poly.material_index = 0 if abs(poly.normal.z) > 0.9 else 1
+    letters.append((ob, nb, w_))
+gap = 0.12
+total_w = sum(w for _, _, w in letters) + gap * 3
+x = -total_w / 2
+for i, (ob, nb, w_) in enumerate(letters):
+    home = Vector((x + w_ / 2, 0, 0))
+    x += w_ + gap
+    ob.parent = q_root
+    ph = i * 1.37
+    wake = 10 + i * 7                                         # neon wakes letter by letter
+    for f in range(F0, F1 + 1):
+        t = 2 * math.pi * (f - F0) / LOOP
+        ob.location = home + Vector((0, 0.07 * math.sin(2 * t + ph), 0.04 * math.sin(3 * t + ph)))
+        ob.rotation_euler = (math.radians(4) * math.sin(2 * t + ph + 1), math.radians(6) * math.sin(t + ph),
+                             math.radians(2) * math.sin(3 * t + ph))
+        ob.keyframe_insert("location", frame=f)
+        ob.keyframe_insert("rotation_euler", frame=f)
+        g = 1.0
+        if wake - 8 <= f < wake + 14:                         # flicker: off, stutter, on
+            u = f - (wake - 8)
+            g = (0.05, 0.05, 0.6, 0.05, 0.05, 0.9, 0.2, 0.05, 1.0, 0.4, 1.0, 1.0, 0.7, 1.0,
+                 1.0, 0.85, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)[u]
+        g *= 1.0 + 0.04 * math.sin(f * 1.9 + ph)              # neon hum
+        nb.inputs["Emission Strength"].default_value = 7.0 * g
+        nb.inputs["Emission Strength"].keyframe_insert("default_value", frame=f)
+    linear_keys(ob)
+    linear_keys(nb.id_data)
+# green spill on the car roof and the floor from the letters
+spill = D.objects.new("QWIZ_Spill", D.lights.new("QWIZ_Spill", "AREA"))
+spill.data.shape, spill.data.size, spill.data.size_y = "RECTANGLE", total_w, 0.5
+spill.data.energy, spill.data.color = 90, (0.1, 1.0, 0.45)
+props.objects.link(spill)
+spill.parent = q_root
+spill.location = (0, -Q_H * 0.6, 0.15)
+spill.rotation_euler = (math.radians(-60), 0, 0)
+spill.visible_camera = spill.visible_glossy = False
+print("QWIZ at", tuple(round(c, 2) for c in Q_C), "width", round(total_w, 2))
+
+# light haze so the lights read as beams
+hz = D.meshes.new("Haze")
+hz_ob = D.objects.new("Haze", hz)
+props.objects.link(hz_ob)
+import bmesh
+bm = bmesh.new()
+bmesh.ops.create_cube(bm, size=1.0)
+bm.to_mesh(hz)
+bm.free()
+hz_ob.location = (cen.x, cen.y, 2.0)
+hz_ob.scale = (12, 12, 4)
+hm = D.materials.new("Haze")
+hnt = hm.node_tree
+for n in list(hnt.nodes):
+    if n.type == "BSDF_PRINCIPLED":
+        hnt.nodes.remove(n)
+vol = hnt.nodes.new("ShaderNodeVolumePrincipled")
+vol.inputs["Density"].default_value = 0.012
+vol.inputs["Anisotropy"].default_value = 0.4
+hnt.links.new(vol.outputs[0], hnt.nodes["Material Output"].inputs["Volume"])
+hz.materials.append(hm)
+hz_ob.visible_shadow = False
+
+# compositor: bloom, a little lens dispersion, vignette
+tree = D.node_groups.new("QWIZ Grade", "CompositorNodeTree")
+tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+N = tree.nodes
+rl = N.new("CompositorNodeRLayers")
+glare = N.new("CompositorNodeGlare")
+glare.inputs["Type"].default_value = "Bloom"
+glare.inputs["Quality"].default_value = "High"
+glare.inputs["Threshold"].default_value = 0.9
+glare.inputs["Strength"].default_value = 0.45
+glare.inputs["Size"].default_value = 0.6
+lens = N.new("CompositorNodeLensdist")
+lens.inputs["Dispersion"].default_value = 0.01
+lens.inputs["Fit"].default_value = True
+mask = N.new("CompositorNodeEllipseMask")
+mask.inputs["Mask"].default_value = 0.0
+mask.inputs["Value"].default_value = 1.0
+mask.inputs["Size"].default_value = (1.1, 1.1)
+blur = N.new("CompositorNodeBlur")
+blur.inputs["Size"].default_value = (180, 180)
+blur.inputs["Extend Bounds"].default_value = False
+lift = N.new("ShaderNodeMapRange")
+lift.inputs["To Min"].default_value = 0.5
+mixv = N.new("ShaderNodeMix")
+mixv.data_type, mixv.blend_type = "RGBA", "MULTIPLY"
+mixv.inputs[0].default_value = 1.0
+outn = N.new("NodeGroupOutput")
+Lk = tree.links
+Lk.new(rl.outputs["Image"], glare.inputs["Image"])
+Lk.new(glare.outputs["Image"], lens.inputs["Image"])
+Lk.new(mask.outputs["Mask"], blur.inputs["Image"])
+Lk.new(blur.outputs["Image"], lift.inputs["Value"])
+Lk.new(lens.outputs["Image"], mixv.inputs[6])
+Lk.new(lift.outputs["Result"], mixv.inputs[7])
+Lk.new(mixv.outputs[2], outn.inputs[0])
+scn.compositing_node_group = tree
+scn.render.use_compositing = True
 
 # ---------------------------------------------------------------- render: Telegram video avatar
 r = scn.render
