@@ -293,12 +293,8 @@ def chain(rot, f):
             R = rot.get(n)
             if R is None and n in LOCAL:
                 R = par.to_3x3().normalized() @ rel.to_3x3().normalized() @ LOCAL[n].to_matrix()
-                if n == "RightArm":
-                    R = C2A @ Matrix.Rotation(-LIFT, 3, "X") @ C2A.inverted() @ R    # forward/up about char X
-                elif n == "RightForeArm":
-                    R = C2A @ Matrix.Rotation(-TILT, 3, "X") @ C2A.inverted() @ R    # phone stands up, back to the lens
-                elif n == "RightHand":
-                    R = R @ Matrix.Rotation(WRIST, 3, "X")                          # wrist bent back: phone upright
+                if n[-1] in "12" and any(k in n for k in ("Index", "Middle", "Ring", "Pinky")):
+                    R = R @ Matrix.Rotation(math.radians(22), 3, "X")       # wrap round the phone's back
             if R is None:
                 R = par.to_3x3().normalized() @ rel.to_3x3().normalized()
                 if n.startswith("LeftHand"):
@@ -315,7 +311,7 @@ bpy.ops.import_scene.fbx(filepath=TEXT_FBX)
 tx_objs = [o for o in D.objects if o not in before]
 tx_arm = next(o for o in tx_objs if o.type == "ARMATURE")
 TX_BONES = [b.name[len(P):] for b in tx_arm.data.bones
-            if b.name[len(P):] in ("RightShoulder", "RightArm", "RightForeArm") or b.name.startswith(P + "RightHand")]
+            if b.name.startswith(P + "RightHand") and b.name != P + "RightHand"]      # fingers + thumb
 TX0 = 60                                                     # our frame 1 = their frame 60; 240 frames on
 
 
@@ -335,9 +331,6 @@ for f in range(F1 - 23, F1 + 1):                             # blend the tail in
 scn.frame_set(F0)
 for o in tx_objs:
     D.objects.remove(o)
-TILT = math.radians(14)
-WRIST = math.radians(28)
-LIFT = math.radians(20)                                      # sitting: raise the phone a little towards the face
 
 # ---------------------------------------------------------------- grip: phone first, then the hand around it, then the arm (IK)
 SC = rig.scale[0]
@@ -370,39 +363,35 @@ def two_bone(S, T, a, b, pole):
 
 
 def grip(rot, pose, f, w):
-    """Phone held up in front of the face, screen to the eyes, back (camera island) to the lens;
-    lowered a little while the hero watches the vacuum. Returns the phone matrix in char space."""
+    """The phone stands upright in front of the chest, screen to the eyes, back (camera island) to the lens.
+    Right hand: phone's right edge in the palm, fingers round the back, thumb on the screen, wrist straight."""
     head_c = to_char(pose["Head"].translation)
     eye_c = head_c + Vector((0, -0.07, 0.09))
-    C = eye_c + Vector((-0.04, -0.31 - 0.04 * w, -0.24 - 0.12 * w))
-    n = (eye_c - C).normalized()                             # screen normal
+    C = eye_c + Vector((-0.05, -0.33 - 0.03 * w, -0.27 - 0.1 * w))
+    to_eye = eye_c - C
+    n = (Vector((to_eye.x, to_eye.y, 0)).normalized() + Vector((0, 0, 0.35))).normalized()   # screen normal
     up = Vector((0, 0, 1))
     zp = (up - n * up.dot(n)).normalized()
     yp = -n
     xp = yp.cross(zp)
-    # palm on the lower back of the phone, fingers round its left edge, thumb over the screen
-    F = Vector((1, 0, 0))
-    F = (F - n * F.dot(n)).normalized()
-    palm_c = C - n * 0.022 - zp * 0.012
-    T = palm_c - F * (L_hand * SC * 0.55)                   # wrist
+    Hs = xp if xp.dot(Vector((-1, 0, 0))) > 0 else -xp       # the holder's right side of the phone
+    Nw = n.copy()                                             # palm flat on the phone's back
+    F = (zp * 0.55 - Hs * 0.85).normalized()                  # fingers across the back towards the far edge
+    palm_c = C - n * 0.03 + Hs * 0.03 - zp * 0.06
+    T = palm_c - F * (L_hand * SC * 0.5)                      # wrist
     S = to_char(pose["RightArm"].translation)
     a = bones[P + "RightArm"].length * SC
     b = bones[P + "RightForeArm"].length * SC
-    El = two_bone(S, T, a, b, Vector((-0.55, 0.2, -1.0)))
-    n_up = (n * 0.5 + Vector((0, -0.4, -1)).normalized() * 0.5).normalized()
+    El = two_bone(S, T, a, b, Vector((-0.7, 0.25, -1.0)))
+    n_up = (Nw * 0.5 + Vector((0, -0.3, -1)).normalized() * 0.5).normalized()
     rot["RightArm"] = frame_rot("RightArm", El - S, n_up)
-    rot["RightForeArm"] = frame_rot("RightForeArm", T - El, n)
-    rot["RightHand"] = frame_rot("RightHand", F, n)
+    rot["RightForeArm"] = frame_rot("RightForeArm", T - El, Nw)
+    rot["RightHand"] = frame_rot("RightHand", F, Nw)
     return Matrix.Translation(C) @ Matrix((xp, yp, zp)).transposed().to_4x4()
 
 
 def phone_in_hand():
-    y = Vector((0, 1, 0))
-    n = (R0_hand.inverted() @ N0_PALM)
-    n = (n - y * n.dot(y)).normalized()                      # palm normal in bone space
-    zp, yp = y, -n                                           # phone length along the fingers, screen to the palm side
-    xp = yp.cross(zp)
-    return Matrix.Translation(y * (L_hand * 1.05) + n * (1.4 / SC / 100)) @ Matrix((xp, yp, zp)).transposed().to_4x4()
+    return Matrix.Identity(4)
 
 
 PHONE_IN_HAND = phone_in_hand()
@@ -418,12 +407,12 @@ for f in range(F0, F1 + 1):
     LOCAL.clear()
     LOCAL.update(TX[f])
     pose = chain(rot, f)
-    ph_arm = pose["RightHand"] @ PHONE_IN_HAND
+    ph_c = grip(rot, pose, f, w)
     tgt_c = world_to_char(vac_pos(f) + Vector((0, 0, 0.05)))
-    rot["Head"] = head_rot(f, tgt_c, w, to_char(ph_arm.translation))
+    rot["Head"] = head_rot(f, tgt_c, w, ph_c.translation)
     pose = chain(rot, f)
     head_world[f] = CH @ to_char(pose["Head"].translation)
-    phone_world[f] = rig.matrix_world @ ph_arm @ Matrix.Scale(1 / SC, 4)
+    phone_world[f] = CH @ ph_c
     for n, M in pose.items():
         b = bones[P + n]
         pb = rig.pose.bones[P + n]
@@ -705,8 +694,8 @@ right_c.z = 0
 right_c.normalize()
 to_cam = Vector((cam_pos0.x - cen.x, cam_pos0.y - cen.y, 0)).normalized()
 # a spot in the upper half of the frame, behind the car
-Q_C = Vector((cen.x, cen.y, 0)) - to_cam * 2.2 + right_c * 0.6
-Q_C.z = 2.15
+Q_C = Vector((cen.x, cen.y, 0)) - to_cam * 2.2 + right_c * 1.15
+Q_C.z = 2.3
 Q_H = 0.85                                                   # cap height, m
 q_root = D.objects.new("QWIZ_Root", None)
 props.objects.link(q_root)
