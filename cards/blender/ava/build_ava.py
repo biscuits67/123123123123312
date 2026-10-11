@@ -274,6 +274,9 @@ def head_rot(f, target_c, w_target, phone_c):
     return C2A @ (Matrix.Rotation(yaw, 3, "Z") @ Matrix.Rotation(pitch, 3, "X")) @ C2A.inverted() @ rest("Head")
 
 
+LOCAL = {}
+
+
 def chain(rot, f):
     out = {}
     fl = flick(f)
@@ -288,21 +291,53 @@ def chain(rot, f):
             rel = b.parent.matrix_local.inverted() @ b.matrix_local
             head = par @ rel.translation
             R = rot.get(n)
+            if R is None and n in LOCAL:
+                R = par.to_3x3().normalized() @ rel.to_3x3().normalized() @ LOCAL[n].to_matrix()
+                if n == "RightArm":
+                    R = C2A @ Matrix.Rotation(-LIFT, 3, "X") @ C2A.inverted() @ R    # forward/up about char X
+                elif n == "RightForeArm":
+                    R = C2A @ Matrix.Rotation(-TILT, 3, "X") @ C2A.inverted() @ R    # phone stands up, back to the lens
+                elif n == "RightHand":
+                    R = R @ Matrix.Rotation(WRIST, 3, "X")                          # wrist bent back: phone upright
             if R is None:
                 R = par.to_3x3().normalized() @ rel.to_3x3().normalized()
-                if n.startswith("RightHandThumb"):
-                    if n == "RightHandThumb1":
-                        R = R @ Matrix.Rotation(math.radians(-28 + 14 * fl), 3, "X")
-                    else:
-                        R = R @ Matrix.Rotation(math.radians(10 - 25 * fl), 3, "X")
-                elif n.startswith("RightHand"):
-                    R = R @ Matrix.Rotation(math.radians(66), 3, "X")       # fingers wrap the phone edge
-                elif n.startswith("LeftHand"):
+                if n.startswith("LeftHand"):
                     R = R @ Matrix.Rotation(math.radians(14), 3, "X")
             M = Matrix.Translation(head) @ R.to_4x4()
         out[n] = M
     return out
 
+
+# ---------------------------------------------------------------- right arm + fingers from Mixamo "Texting" (same Y Bot rest)
+TEXT_FBX = os.path.join(PROPS, "texting", "Texting.fbx")
+before = set(D.objects)
+bpy.ops.import_scene.fbx(filepath=TEXT_FBX)
+tx_objs = [o for o in D.objects if o not in before]
+tx_arm = next(o for o in tx_objs if o.type == "ARMATURE")
+TX_BONES = [b.name[len(P):] for b in tx_arm.data.bones
+            if b.name[len(P):] in ("RightShoulder", "RightArm", "RightForeArm") or b.name.startswith(P + "RightHand")]
+TX0 = 60                                                     # our frame 1 = their frame 60; 240 frames on
+
+
+def tx_sample(af):
+    scn.frame_set(af)
+    return {n: tx_arm.pose.bones[P + n].rotation_quaternion.copy() if tx_arm.pose.bones[P + n].rotation_mode == "QUATERNION"
+            else tx_arm.pose.bones[P + n].rotation_euler.to_quaternion() for n in TX_BONES}
+
+
+TX = {}
+for f in range(F0, F1 + 1):
+    TX[f] = tx_sample(TX0 + f - F0)
+for f in range(F1 - 23, F1 + 1):                             # blend the tail into the head: seamless loop
+    u = smooth((f - (F1 - 24)) / 24)
+    early = tx_sample(TX0 + f - F0 - LOOP)
+    TX[f] = {n: TX[f][n].slerp(early[n], u) for n in TX_BONES}
+scn.frame_set(F0)
+for o in tx_objs:
+    D.objects.remove(o)
+TILT = math.radians(14)
+WRIST = math.radians(28)
+LIFT = math.radians(20)                                      # sitting: raise the phone a little towards the face
 
 # ---------------------------------------------------------------- grip: phone first, then the hand around it, then the arm (IK)
 SC = rig.scale[0]
@@ -361,6 +396,16 @@ def grip(rot, pose, f, w):
     return Matrix.Translation(C) @ Matrix((xp, yp, zp)).transposed().to_4x4()
 
 
+def phone_in_hand():
+    y = Vector((0, 1, 0))
+    n = (R0_hand.inverted() @ N0_PALM)
+    n = (n - y * n.dot(y)).normalized()                      # palm normal in bone space
+    zp, yp = y, -n                                           # phone length along the fingers, screen to the palm side
+    xp = yp.cross(zp)
+    return Matrix.Translation(y * (L_hand * 1.05) + n * (1.4 / SC / 100)) @ Matrix((xp, yp, zp)).transposed().to_4x4()
+
+
+PHONE_IN_HAND = phone_in_hand()
 act = D.actions.new("Hero_Ava")
 rig.animation_data_create()
 rig.animation_data.action = act
@@ -370,13 +415,15 @@ head_world = {}
 phone_world = {}
 for f in range(F0, F1 + 1):
     rot, w = pose_for(f)
+    LOCAL.clear()
+    LOCAL.update(TX[f])
     pose = chain(rot, f)
-    ph_c = grip(rot, pose, f, w)
+    ph_arm = pose["RightHand"] @ PHONE_IN_HAND
     tgt_c = world_to_char(vac_pos(f) + Vector((0, 0, 0.05)))
-    rot["Head"] = head_rot(f, tgt_c, w, ph_c.translation)
+    rot["Head"] = head_rot(f, tgt_c, w, to_char(ph_arm.translation))
     pose = chain(rot, f)
     head_world[f] = CH @ to_char(pose["Head"].translation)
-    phone_world[f] = CH @ ph_c
+    phone_world[f] = rig.matrix_world @ ph_arm @ Matrix.Scale(1 / SC, 4)
     for n, M in pose.items():
         b = bones[P + n]
         pb = rig.pose.bones[P + n]
