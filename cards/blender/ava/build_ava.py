@@ -106,6 +106,7 @@ bill_src = D.objects["Bill_00"]
 rig = D.objects["Hero_Rig"]
 bones = rig.data.bones
 exec(open(os.path.join(AVA, "hero_eyes.py")).read())
+REMY_FBX = os.path.join(PROPS, "remy", "Remy.fbx")
 
 # seat: on top of the front arch, a hand's width in from the edge
 SEAT = front_out - FWD * 0.1 - OUTW * 0.12
@@ -117,6 +118,7 @@ rig.location = (SEAT.x, SEAT.y, 0)
 rig.rotation_mode = "XYZ"
 rig.rotation_euler = (math.radians(90), 0, yaw_obj)
 bpy.context.view_layer.update()
+exec(open(os.path.join(AVA, "remy_hands.py")).read())
 print("seat", tuple(round(c, 3) for c in SEAT), "surface", round(SURFACE, 3), "floor", round(FLOOR_Z, 3))
 
 K = (Matrix.Rotation(math.radians(90), 4, "X") @ Matrix.Scale(rig.scale[0], 4)).inverted()   # char -> armature
@@ -459,14 +461,7 @@ for m in D.materials:                                            # black gloves 
         wb.inputs["Distance"].default_value = 0.001
         gn.links.new(wn.outputs["Fac"], wb.inputs["Height"])
         gn.links.new(wb.outputs["Normal"], g.inputs["Normal"])
-for gname in ("Hero_Hands_Head", "Hero_Joints"):
-    go = D.objects[gname]
-    rm = go.modifiers.new("Glove_Fuse", "REMESH")       # after the armature: segments melt into one skin
-    rm.mode, rm.adaptivity = "VOXEL", 0.0
-    rm.voxel_size = 0.003 / go.matrix_world.to_scale().x            # object units are rig units (cm)
-    rm.use_smooth_shade = True
-    sm = go.modifiers.new("Glove_Smooth", "SMOOTH")
-    sm.factor, sm.iterations = 0.5, 3
+
 # the screen: our wallet app, emissive, scrolls a page with each thumb swipe
 scr_img = D.images.load(os.path.join(AVA, "phone_screen.png"))
 scr_img.pack()
