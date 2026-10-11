@@ -134,7 +134,7 @@ old = D.objects["Asset3DLoader.sceneRoot"]
 scn.frame_set(F0)
 olo, ohi = bbox(old)
 old.hide_render = old.hide_viewport = True
-pallet = join_into(imported(lambda: bpy.ops.wm.usd_import(filepath=os.path.join(PROPS, "money/pack.usdz"))),
+pallet = join_into(imported(lambda: bpy.ops.wm.usd_import(filepath=os.path.join(PROPS, "money/pack.usdz"), set_frame_range=False)),
                    "USDT_Pallet")
 pallet.data.transform(Matrix.Rotation(math.radians(90), 4, "Z"))      # long side towards the camera (-X)
 fit(pallet, 1, 1.55, base=olo.z, center_xy=((olo.x + ohi.x) / 2 + 0.25, (olo.y + ohi.y) / 2))
@@ -557,5 +557,7 @@ for img in D.images:
     if img.filepath.startswith(("/tmp", "/home")) and not img.packed_file:
         img.pack()
 scn.frame_set(F0)
+scn.frame_start, scn.frame_end = 1, 250     # imports must not touch the loop range
+
 bpy.ops.wm.save_as_mainfile(filepath=OUT, compress=True, relative_remap=False)
 print("saved", OUT)
