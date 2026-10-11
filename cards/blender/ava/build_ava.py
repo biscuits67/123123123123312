@@ -377,7 +377,7 @@ def grip(rot, pose, f, w):
     Hs = xp if xp.dot(Vector((-1, 0, 0))) > 0 else -xp       # the holder's right side of the phone
     Nw = n.copy()                                             # palm flat on the phone's back
     F = (zp * 0.55 - Hs * 0.85).normalized()                  # fingers across the back towards the far edge
-    palm_c = C - n * 0.03 + Hs * 0.03 - zp * 0.06
+    palm_c = C - n * 0.048 + Hs * 0.03 - zp * 0.06          # sits on the back, no fingers through the case
     T = palm_c - F * (L_hand * SC * 0.5)                      # wrist
     S = to_char(pose["RightArm"].translation)
     a = bones[P + "RightArm"].length * SC
