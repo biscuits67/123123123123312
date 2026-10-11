@@ -423,6 +423,18 @@ for nm in ("Hero_Hoodie", "Hero_Pants"):                 # soft fabric at the be
         cs.rest_source = "ORCO"
 
 
+# the mannequin's joint balls (shoulders, elbows...) poke through the hoodie: everything is clothed or gloved
+D.objects["Hero_Joints"].hide_render = D.objects["Hero_Joints"].hide_viewport = True
+for nm in ("Hero_Hoodie", "Hero_Pants"):                   # close split seams (white specks of light)
+    ob_ = D.objects.get(nm)
+    if ob_ and not ob_.modifiers.get("Seam_Weld"):
+        wd = ob_.modifiers.new("Seam_Weld", "WELD")
+        wd.merge_threshold = 0.0015 / ob_.matrix_world.to_scale().x
+        while ob_.modifiers[0] != wd:
+            with bpy.context.temp_override(object=ob_):
+                bpy.ops.object.modifier_move_up(modifier=wd.name)
+
+
 def phone_in_hand():
     return Matrix.Identity(4)
 
