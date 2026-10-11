@@ -242,16 +242,7 @@ def pose_for(f):
         lean = (0.10, 0.16, 0.18)[i] * (1 - 0.45 * w) + 0.012 * breathe
         rot[n] = aim(n, (0, -lean, 1), pre=Matrix.Rotation(tw * (i + 1) / 3, 4, "Z"))
     rot["Neck"] = aim("Neck", (0, -0.16 * (1 - 0.4 * w), 1), pre=Matrix.Rotation(tw, 4, "Z"))
-    # right arm: phone held up in front of the face like anyone reads a phone: screen to the eyes,
-    # the back (burgundy, big camera island) towards the camera; lowers a little while watching
-    k = 0.4 * w
-    u = (-0.1, -0.5, -0.86)
-    fa = (0.36, -0.72 + 0.1 * k, 0.6 - 0.3 * k)
-    hd = (0.82, -0.5, 0.28 - 0.2 * k)                       # fingers across, so the phone stands upright
-    palm = Vector((0.05, 0.86, 0.5 - 0.25 * k)).normalized()
-    rot["RightArm"] = aim("RightArm", u, (0, 0, -1), (0.0, -0.3, -0.9))
-    rot["RightForeArm"] = aim("RightForeArm", fa, (0, 0, -1), (0.25, 0.1, 1))
-    rot["RightHand"] = aim("RightHand", hd, (0, 0, -1), -palm)
+    # right arm: solved per frame from where the phone is (see grip below)
     # left arm: leaning on the fender beside the hip
     rot["LeftArm"] = aim("LeftArm", (0.24, 0.28, -0.93), (0, 0, -1), (0.0, 0.9, 0.2))
     rot["LeftForeArm"] = aim("LeftForeArm", (0.14, 0.18, -0.97), (0, 0, -1), (0.0, 0.9, 0.2))
@@ -303,7 +294,7 @@ def chain(rot, f):
                     else:
                         R = R @ Matrix.Rotation(math.radians(10 - 25 * fl), 3, "X")
                 elif n.startswith("RightHand"):
-                    R = R @ Matrix.Rotation(math.radians(52), 3, "X")       # fingers wrap the phone edge
+                    R = R @ Matrix.Rotation(math.radians(66), 3, "X")       # fingers wrap the phone edge
                 elif n.startswith("LeftHand"):
                     R = R @ Matrix.Rotation(math.radians(14), 3, "X")
             M = Matrix.Translation(head) @ R.to_4x4()
@@ -311,25 +302,62 @@ def chain(rot, f):
     return out
 
 
-# phone placement relative to the right hand bone (bone space): back in the palm, screen to the face
-hand_b = bones[P + "RightHand"]
-palm_rest_arm = to_arm_dir((0, 0, 1))                           # palm side of this rig's hand
-palm_n_bone = (hand_b.matrix_local.to_3x3().normalized().inverted() @ palm_rest_arm).normalized()
-L_hand = hand_b.length
-
-
-def phone_bone_matrix(flip=1):
-    y = Vector((0, 1, 0))                                        # along the fingers
-    n = (palm_n_bone - y * palm_n_bone.dot(y)).normalized()      # out of the palm
-    x = y.cross(n) * flip                                        # across the palm (thumb side or not)
-    # phone local: X width (along the fingers), -Y screen normal (out of the palm), Z length (across the palm)
-    R = Matrix((y, -n, x)).transposed()
-    pos = y * (L_hand * 0.75) + n * 1.8                          # armature units (cm)
-    return Matrix.Translation(pos) @ R.to_4x4()
-
-
-PHONE_BONE = phone_bone_matrix()   # flipped below once the pose exists, so the phone stands upright
+# ---------------------------------------------------------------- grip: phone first, then the hand around it, then the arm (IK)
+SC = rig.scale[0]
+L_hand = bones[P + "RightHand"].length
+R0_hand = rest("RightHand")
+Y0_hand = R0_hand.col[1]
+W0 = bones[P + "RightHandIndex1"].head_local - bones[P + "RightHandPinky1"].head_local
+W0 = (W0 - Y0_hand * W0.dot(Y0_hand)).normalized()          # across the knuckles, towards the thumb
+N0_PALM = W0.cross(Y0_hand).normalized()                     # right hand: out of the palm
 phone_h = 0.163
+
+
+def frame_rot(name, d_char, n_char):
+    """Bone along char-space d_char, with the (rest) palm-side vector turned to n_char: no hidden twist."""
+    R0 = rest(name)
+    y0 = R0.col[1]
+    n0 = (N0_PALM - y0 * N0_PALM.dot(y0)).normalized()
+    R = frame3(to_arm_dir(d_char), to_arm_dir(n_char)) @ frame3(y0, n0).inverted()
+    return R @ R0
+
+
+def two_bone(S, T, a, b, pole):
+    d = T - S
+    L = min(d.length, (a + b) * 0.998)
+    ax = d.normalized()
+    cos_a = (a * a + L * L - b * b) / (2 * a * L)
+    sin_a = math.sqrt(max(0.0, 1 - cos_a * cos_a))
+    perp = (pole - ax * pole.dot(ax)).normalized()
+    return S + ax * (a * cos_a) + perp * (a * sin_a)
+
+
+def grip(rot, pose, f, w):
+    """Phone held up in front of the face, screen to the eyes, back (camera island) to the lens;
+    lowered a little while the hero watches the vacuum. Returns the phone matrix in char space."""
+    head_c = to_char(pose["Head"].translation)
+    eye_c = head_c + Vector((0, -0.07, 0.09))
+    C = eye_c + Vector((-0.04, -0.31 - 0.04 * w, -0.24 - 0.12 * w))
+    n = (eye_c - C).normalized()                             # screen normal
+    up = Vector((0, 0, 1))
+    zp = (up - n * up.dot(n)).normalized()
+    yp = -n
+    xp = yp.cross(zp)
+    # palm on the lower back of the phone, fingers round its left edge, thumb over the screen
+    F = Vector((1, 0, 0))
+    F = (F - n * F.dot(n)).normalized()
+    palm_c = C - n * 0.022 - zp * 0.012
+    T = palm_c - F * (L_hand * SC * 0.55)                   # wrist
+    S = to_char(pose["RightArm"].translation)
+    a = bones[P + "RightArm"].length * SC
+    b = bones[P + "RightForeArm"].length * SC
+    El = two_bone(S, T, a, b, Vector((-0.55, 0.2, -1.0)))
+    n_up = (n * 0.5 + Vector((0, -0.4, -1)).normalized() * 0.5).normalized()
+    rot["RightArm"] = frame_rot("RightArm", El - S, n_up)
+    rot["RightForeArm"] = frame_rot("RightForeArm", T - El, n)
+    rot["RightHand"] = frame_rot("RightHand", F, n)
+    return Matrix.Translation(C) @ Matrix((xp, yp, zp)).transposed().to_4x4()
+
 
 act = D.actions.new("Hero_Ava")
 rig.animation_data_create()
@@ -341,16 +369,12 @@ phone_world = {}
 for f in range(F0, F1 + 1):
     rot, w = pose_for(f)
     pose = chain(rot, f)
-    hand = pose["RightHand"]
-    phone_c = to_char(hand @ PHONE_BONE.translation)
+    ph_c = grip(rot, pose, f, w)
     tgt_c = world_to_char(vac_pos(f) + Vector((0, 0, 0.05)))
-    rot["Head"] = head_rot(f, tgt_c, w, phone_c)
+    rot["Head"] = head_rot(f, tgt_c, w, ph_c.translation)
     pose = chain(rot, f)
     head_world[f] = CH @ to_char(pose["Head"].translation)
-    hand_m = pose["RightHand"]
-    palm_c = to_char(hand_m @ Vector((0, L_hand * 0.85, 0)))
-    eye_c = to_char(pose["Head"] @ Vector((0, bones[P + "Head"].length * 0.45, 0)))
-    phone_world[f] = (CH @ palm_c, CH @ eye_c)
+    phone_world[f] = CH @ ph_c
     for n, M in pose.items():
         b = bones[P + n]
         pb = rig.pose.bones[P + n]
@@ -410,19 +434,9 @@ for c in list(phone.users_collection):
     c.objects.unlink(phone)
 hero_coll.objects.link(phone)
 phone.data.transform(Matrix.Translation((0, 0, -phone_h / 2)))            # origin at the centre
-# keyed per frame: bottom third in the palm, standing upright, screen square to the eyes,
-# so the camera sees the burgundy back with the big camera island
+# keyed per frame from the grip (the hand was solved around it)
 for f in range(F0, F1 + 1):
-    palm_w, eye_w = phone_world[f]
-    upw = Vector((0, 0, 1))
-    to_eye = eye_w - palm_w
-    n_h = Vector((to_eye.x, to_eye.y, 0)).normalized()
-    n = (n_h + upw * 0.6).normalized()                  # screen normal: tilted back ~30 deg, held up, not flat
-    pos = palm_w + upw * 0.025 + n * 0.018
-    z = (upw - n * upw.dot(n)).normalized()             # long axis, as upright as the screen allows
-    y = -n                                              # model: screen faces -Y
-    x = y.cross(z)
-    phone.matrix_world = Matrix.Translation(pos) @ Matrix((x, y, z)).transposed().to_4x4()
+    phone.matrix_world = phone_world[f]
     phone.keyframe_insert("location", frame=f)
     phone.keyframe_insert("rotation_euler", frame=f)
 linear_keys(phone)
